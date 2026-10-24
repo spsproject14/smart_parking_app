@@ -5,8 +5,5 @@
   ],
   "routes": [
     { "src": "/(.*)", "dest": "app.py" }
-  ],
-  "crons": [
-    { "path": "/api/cron/maintenance", "schedule": "* * * * *" }
   ]
 }
