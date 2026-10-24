@@ -1,0 +1,143 @@
+{% extends 'base.html' %} {% block page_content %}
+<div class="welcome">
+  <div>
+    <div class="eyebrow">Personal preferences</div>
+    <h1 class="page-title">Settings</h1>
+    <p class="subtitle">Manage your contact details, RFID card and wallet.</p>
+  </div>
+</div>
+<div class="grid settings-grid">
+  <div class="grid" style="gap: 16px">
+    <div class="balance-card">
+      <div class="label">Current wallet balance</div>
+      <div class="amount">₹{{'%.2f'|format(wallet_balance)}}</div>
+      <button
+        class="btn"
+        onclick="document.getElementById('rechargeModal').classList.add('show')"
+      >
+        <i class="fa-solid fa-plus"></i> Recharge wallet
+      </button>
+    </div>
+    <div class="card">
+      <h3 style="margin: 0 0 6px">Appearance</h3>
+      <p class="muted" style="font-size: 12px">
+        Choose a comfortable theme for your device.
+      </p>
+      <button class="btn btn-outline" onclick="toggleTheme()">
+        <i class="fa-solid fa-circle-half-stroke"></i> Toggle light / dark mode
+      </button>
+    </div>
+    <div class="notice">
+      <i class="fa-solid fa-circle-info"></i> Wallet recharge is currently in
+      demo mode and credits the selected amount without processing a real
+      payment. Integrate a payment gateway before production use.
+    </div>
+  </div>
+  <div class="card">
+    <h3 style="margin: 0 0 5px">Account details</h3>
+    <p class="muted" style="font-size: 12px; margin-bottom: 22px">
+      Only mobile number and RFID UID can be changed here.
+    </p>
+    <form method="post" class="grid" style="gap: 16px">
+      <div class="field">
+        <label>Full name (read-only)</label
+        ><input value="{{user.name}}" readonly />
+      </div>
+      <div class="field">
+        <label>Email (read-only)</label
+        ><input value="{{user.email}}" readonly />
+      </div>
+      <div class="field">
+        <label>Mobile number</label
+        ><input name="mobile" value="{{user.mobile}}" required />
+      </div>
+      <div class="field">
+        <label>RFID UID</label
+        ><input
+          name="rfid"
+          value="{{user.rfid or ''}}"
+          placeholder="RFID card identifier"
+        />
+      </div>
+      <button class="btn btn-primary">
+        <i class="fa-solid fa-floppy-disk"></i> Save settings
+      </button>
+    </form>
+  </div>
+</div>
+<div class="section-head">
+  <div>
+    <h3>Wallet activity</h3>
+    <p>Recent credits and debits associated with your account.</p>
+  </div>
+</div>
+<div class="activity-grid">
+  {% for t in transactions %}
+  <div class="activity-card">
+    <div class="activity-top">
+      <div>
+        <span class="pill">{{t.type|replace('_',' ')}}</span>
+        <div style="font-weight: 900; margin-top: 9px">{{t.note}}</div>
+      </div>
+      <div
+        class="activity-amount"
+        style="color:{{'#059669' if t.amount>0 else '#dc2626'}}"
+      >
+        {{'+' if t.amount>0 else ''}}₹{{'%.2f'|format(t.amount)}}
+      </div>
+    </div>
+    <div class="activity-meta">
+      <i class="fa-regular fa-clock"></i> {{t.created_at.strftime('%d %b %Y,
+      %I:%M %p')}}
+    </div>
+  </div>
+  {% else %}
+  <div class="card empty" style="grid-column: 1/-1">
+    <i class="fa-solid fa-wallet"></i><strong>No wallet activity yet</strong>
+    <p>Your credits and debits will appear here.</p>
+  </div>
+  {% endfor %}
+</div>
+<div class="modal" id="rechargeModal">
+  <div class="modal-card">
+    <button
+      class="modal-close"
+      onclick="
+        document.getElementById('rechargeModal').classList.remove('show')
+      "
+    >
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+    <div
+      class="slot-icon"
+      style="width: 48px; height: 48px; margin-bottom: 15px"
+    >
+      <i class="fa-solid fa-wallet"></i>
+    </div>
+    <h3 style="margin: 0">Recharge wallet</h3>
+    <p class="muted" style="font-size: 12px">
+      Enter an amount in Indian rupees.
+    </p>
+    <form method="post" action="{{url_for('wallet_recharge')}}">
+      <div class="field" style="margin: 18px 0">
+        <label>Amount (₹)</label
+        ><input
+          type="number"
+          name="amount"
+          min="1"
+          max="50000"
+          step="1"
+          required
+          placeholder="e.g. 500"
+        />
+      </div>
+      <button class="btn btn-primary" style="width: 100%">
+        Pay & add balance
+      </button>
+      <p class="help" style="margin-top: 10px">
+        Demo only: no real payment is collected.
+      </p>
+    </form>
+  </div>
+</div>
+{% endblock %}

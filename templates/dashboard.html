@@ -1,0 +1,180 @@
+{% extends 'base.html' %} {% block page_content %}
+<div class="welcome">
+  <div>
+    <div class="eyebrow">Your parking workspace</div>
+    <h1 class="page-title">Welcome back, {{user.name.split()[0]}}</h1>
+    <p class="subtitle">
+      Your live parking status and upcoming reservations at a glance.
+    </p>
+  </div>
+  <a class="btn btn-primary" href="{{url_for('book')}}"
+    ><i class="fa-solid fa-plus"></i> Book a slot</a
+  >
+</div>
+<div class="grid stats">
+  <div class="stat">
+    <div class="stat-icon"><i class="fa-solid fa-calendar-check"></i></div>
+    <div>
+      <div class="stat-label">Current bookings</div>
+      <div class="stat-value">{{current_bookings|length}}</div>
+    </div>
+  </div>
+  <div class="stat">
+    <div class="stat-icon"><i class="fa-solid fa-wallet"></i></div>
+    <div>
+      <div class="stat-label">Wallet balance</div>
+      <div class="stat-value">₹{{'%.2f'|format(wallet_balance)}}</div>
+    </div>
+  </div>
+  <div class="stat">
+    <div class="stat-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+    <div>
+      <div class="stat-label">Past bookings</div>
+      <div class="stat-value">
+        <a href="{{url_for('past_bookings_page')}}"
+          >View history <i class="fa-solid fa-arrow-right"></i
+        ></a>
+      </div>
+    </div>
+  </div>
+  <div class="stat">
+    <div class="stat-icon"><i class="fa-solid fa-shield-halved"></i></div>
+    <div>
+      <div class="stat-label">Account status</div>
+      <div class="stat-value" style="font-size: 18px">
+        {{'Blacklisted' if user.blacklisted else 'Active'}}
+      </div>
+    </div>
+  </div>
+</div>
+{% if user.blacklisted %}
+<div class="flash error">
+  <i class="fa-solid fa-ban"></i> Your account is blacklisted after repeated
+  overstay penalties. New bookings are disabled until an administrator restores
+  access.
+</div>
+{% endif %}
+<div class="section-head">
+  <div>
+    <h3>Live parking slots</h3>
+    <p>Availability is based on recent sensor reports.</p>
+  </div>
+  <span class="pill"><i class="fa-solid fa-wifi"></i> Live status</span>
+</div>
+<div class="grid slots-grid">
+  {% for s in slots %}
+  <div class="slot-card">
+    <div class="slot-top">
+      <div class="slot-id">{{s._id}}</div>
+      <div class="slot-icon"><i class="fa-solid fa-car-side"></i></div>
+    </div>
+    <span
+      class="status {{'status-occupied' if s.occupied else ('status-available' if s.sensor_known else 'status-unknown')}}"
+      >{{'Occupied' if s.occupied else ('Available' if s.sensor_known else
+      'Unknown')}}</span
+    >
+    <p class="help" style="margin: 12px 0 0">
+      {{'Sensor updated' if s.sensor_updated_at else 'Waiting for sensor data'}}
+    </p>
+  </div>
+  {% endfor %}
+</div>
+<div class="section-head">
+  <div>
+    <h3>Current bookings</h3>
+    <p>Manage upcoming and active parking sessions.</p>
+  </div>
+</div>
+{% if current_bookings %}
+<div class="booking-list">
+  {% for b in current_bookings %}
+  <div
+    class="booking-row"
+    data-booking-end="{{b.end_at.isoformat() if b.end_at else ''}}"
+  >
+    <div class="booking-slot">
+      <div class="slot-badge">{{b.slot_id}}</div>
+      <div>
+        <strong
+          >{{'Active parking' if b.status=='ACTIVE' else 'Reserved
+          parking'}}</strong
+        ><small>{{b.status}}</small>
+        <div style="margin-top: 7px">
+          <span
+            class="status {{'status-active' if b.status=='ACTIVE' else 'status-booked'}}"
+            >{{b.status}}</span
+          >
+        </div>
+      </div>
+    </div>
+    <div class="booking-time">
+      <div>
+        <div class="time-label">Start time</div>
+        <div
+          class="time-value local-time"
+          data-time="{{b.start_at.isoformat()}}"
+        >
+          {{b.start_at.strftime('%d %b %Y, %I:%M %p') if b.start_at else '—'}}
+        </div>
+      </div>
+      <div>
+        <div class="time-label">End time</div>
+        <div class="time-value local-time" data-time="{{b.end_at.isoformat()}}">
+          {{b.end_at.strftime('%d %b %Y, %I:%M %p') if b.end_at else '—'}}
+        </div>
+      </div>
+      <div class="full">
+        <div class="time-label">Time remaining</div>
+        <div
+          class="countdown"
+          data-countdown="{{b.end_at.isoformat() if b.end_at else ''}}"
+        >
+          Calculating…
+        </div>
+        <div class="timer-note reminder" style="display: none">
+          <i class="fa-regular fa-bell"></i> Your booking ends in 10 minutes or
+          less.
+        </div>
+      </div>
+    </div>
+    <div class="booking-actions">
+      {% if b.status == 'BOOKED' %}
+      <form method="post" action="{{url_for('web_entry',booking_id=b._id)}}">
+        <button class="btn btn-primary btn-sm">
+          <i class="fa-solid fa-door-open"></i> Open gate
+        </button>
+      </form>
+      {% endif %}{% if b.status == 'ACTIVE' %}
+      <form
+        method="post"
+        action="{{url_for('web_exit',booking_id=b._id)}}"
+        onsubmit="
+          return confirm(
+            'Request the exit gate to open? The session closes after the sensor confirms vacancy.',
+          );
+        "
+      >
+        <button class="btn btn-danger btn-sm">
+          <i class="fa-solid fa-right-from-bracket"></i> Exit parking
+        </button>
+      </form>
+      {% endif %}<button
+        class="btn btn-outline btn-sm"
+        onclick="showExtend('{{b._id}}','{{b.end_at.isoformat()}}')"
+      >
+        <i class="fa-regular fa-clock"></i> Extend
+      </button>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card empty">
+  <i class="fa-regular fa-calendar-check"></i
+  ><strong>No current bookings</strong>
+  <p>Choose a time and reserve your parking space.</p>
+  <a class="btn btn-primary" href="{{url_for('book')}}"
+    ><i class="fa-solid fa-plus"></i> Book a slot</a
+  >
+</div>
+{% endif %} {% endblock %}

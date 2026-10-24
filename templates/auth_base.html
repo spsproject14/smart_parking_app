@@ -1,0 +1,1264 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>
+      {% if page == 'admin' %}Admin Console{% else %}ParkEase{% endif %} · Smart
+      Parking
+    </title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
+    <style>
+      :root {
+        --blue: #2563eb;
+        --blue2: #3b82f6;
+        --navy: #10234b;
+        --ink: #17233c;
+        --muted: #718096;
+        --line: #e6edf7;
+        --pale: #eff6ff;
+        --bg: #f6f9fe;
+        --white: #fff;
+        --green: #059669;
+        --red: #dc2626;
+        --amber: #d97706;
+        --shadow: 0 12px 35px rgba(25, 65, 130, 0.08);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Nunito", "Glacial Indifference", sans-serif;
+        font-size: 15px;
+      }
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+      a {
+        text-decoration: none;
+        color: inherit;
+      }
+      button {
+        cursor: pointer;
+      }
+      .app {
+        min-height: 100vh;
+      }
+      .sidebar {
+        width: 250px;
+        background: #fff;
+        border-right: 1px solid var(--line);
+        position: fixed;
+        inset: 0 auto 0 0;
+        padding: 26px 18px;
+        display: flex;
+        flex-direction: column;
+        z-index: 20;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 0 10px 30px;
+        font-size: 21px;
+        font-weight: 900;
+        color: var(--navy);
+        letter-spacing: -0.6px;
+      }
+      .brand-mark {
+        width: 40px;
+        height: 40px;
+        border-radius: 13px;
+        background: linear-gradient(135deg, #2563eb, #60a5fa);
+        display: grid;
+        place-items: center;
+        color: white;
+        box-shadow: 0 7px 16px #2563eb30;
+      }
+      .nav-label {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1.4px;
+        color: #9aa8bd;
+        font-weight: 900;
+        padding: 12px 12px 8px;
+      }
+      .nav-link {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        padding: 12px 13px;
+        border-radius: 12px;
+        color: #64748b;
+        font-weight: 800;
+        margin: 2px 0;
+        transition: 0.18s;
+      }
+      .nav-link i {
+        width: 19px;
+        text-align: center;
+        font-size: 15px;
+      }
+      .nav-link:hover,
+      .nav-link.active {
+        background: #edf4ff;
+        color: var(--blue);
+      }
+      .sidebar-bottom {
+        margin-top: auto;
+        border-top: 1px solid var(--line);
+        padding: 18px 8px 0;
+      }
+      .profile-mini {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .avatar {
+        width: 38px;
+        height: 38px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: #dbeafe;
+        color: #1d4ed8;
+        font-weight: 900;
+      }
+      .profile-mini strong {
+        display: block;
+        font-size: 13px;
+      }
+      .profile-mini small {
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .main {
+        margin-left: 250px;
+        min-height: 100vh;
+      }
+      .topbar {
+        height: 78px;
+        background: rgba(255, 255, 255, 0.9);
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 34px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        backdrop-filter: blur(12px);
+      }
+      .topbar h2 {
+        margin: 0;
+        font-size: 19px;
+        font-weight: 900;
+        letter-spacing: -0.3px;
+      }
+      .top-right {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .top-date {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .content {
+        padding: 30px 34px 46px;
+        max-width: 1600px;
+        margin: auto;
+      }
+      .eyebrow {
+        font-size: 11px;
+        color: var(--blue);
+        font-weight: 900;
+        letter-spacing: 1.6px;
+        text-transform: uppercase;
+        margin-bottom: 7px;
+      }
+      .page-title {
+        font-size: 28px;
+        line-height: 1.2;
+        margin: 0;
+        font-weight: 900;
+        letter-spacing: -0.8px;
+      }
+      .subtitle {
+        color: var(--muted);
+        margin: 7px 0 0;
+        font-size: 14px;
+      }
+      .welcome {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 27px;
+      }
+      .btn {
+        border: 0;
+        border-radius: 11px;
+        padding: 11px 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        font-weight: 900;
+        font-size: 13px;
+        transition: 0.2s;
+      }
+      .btn-primary {
+        background: var(--blue);
+        color: #fff;
+        box-shadow: 0 7px 15px #2563eb24;
+      }
+      .btn-primary:hover {
+        background: #1d4ed8;
+        transform: translateY(-1px);
+      }
+      .btn-soft {
+        background: #edf4ff;
+        color: var(--blue);
+      }
+      .btn-outline {
+        background: #fff;
+        border: 1px solid var(--line);
+        color: var(--ink);
+      }
+      .btn-danger {
+        background: #fff1f2;
+        color: #be123c;
+      }
+      .btn-success {
+        background: #ecfdf5;
+        color: #047857;
+      }
+      .btn-sm {
+        padding: 8px 11px;
+        font-size: 12px;
+        border-radius: 9px;
+      }
+      .btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      .grid {
+        display: grid;
+        gap: 18px;
+      }
+      .stats {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        margin-bottom: 22px;
+      }
+      .stat,
+      .card {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        box-shadow: var(--shadow);
+      }
+      .stat {
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+      .stat-icon {
+        width: 47px;
+        height: 47px;
+        display: grid;
+        place-items: center;
+        border-radius: 14px;
+        background: #eff6ff;
+        color: var(--blue);
+        font-size: 18px;
+      }
+      .stat-label {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+      }
+      .stat-value {
+        font-size: 25px;
+        font-weight: 900;
+        line-height: 1.2;
+        margin-top: 4px;
+      }
+      .section-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin: 26px 0 14px;
+      }
+      .section-head h3 {
+        margin: 0;
+        font-size: 17px;
+        font-weight: 900;
+      }
+      .section-head p {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .card {
+        padding: 22px;
+      }
+      .slots-grid {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+      .slot-card {
+        border: 1px solid var(--line);
+        border-radius: 15px;
+        padding: 17px;
+        background: #fff;
+        min-width: 0;
+      }
+      .slot-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 18px;
+      }
+      .slot-id {
+        font-size: 17px;
+        font-weight: 900;
+      }
+      .slot-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+        background: #eff6ff;
+        color: var(--blue);
+        display: grid;
+        place-items: center;
+      }
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 100px;
+        padding: 5px 9px;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.2px;
+        white-space: nowrap;
+      }
+      .status:before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+      .status-available,
+      .status-completed,
+      .status-solved,
+      .status-active {
+        background: #ecfdf5;
+        color: #047857;
+      }
+      .status-occupied,
+      .status-cancelled,
+      .status-open,
+      .status-failed {
+        background: #fff1f2;
+        color: #be123c;
+      }
+      .status-reserved,
+      .status-booked,
+      .status-pending,
+      .status-dispatched {
+        background: #eff6ff;
+        color: #1d4ed8;
+      }
+      .status-unknown,
+      .status-no_show {
+        background: #fff7ed;
+        color: #c2410c;
+      }
+      .booking-list {
+        display: grid;
+        gap: 12px;
+      }
+      .booking-row {
+        border: 1px solid var(--line);
+        border-radius: 15px;
+        padding: 17px;
+        display: grid;
+        grid-template-columns: 1.1fr 1.6fr 1fr;
+        align-items: center;
+        gap: 16px;
+      }
+      .booking-slot {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .slot-badge {
+        width: 45px;
+        height: 45px;
+        background: #edf4ff;
+        color: var(--blue);
+        border-radius: 13px;
+        display: grid;
+        place-items: center;
+        font-weight: 900;
+      }
+      .booking-slot strong {
+        display: block;
+        font-size: 14px;
+      }
+      .booking-slot small {
+        display: block;
+        color: var(--muted);
+        margin-top: 3px;
+      }
+      .booking-time {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .time-label {
+        font-size: 10px;
+        color: var(--muted);
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+      }
+      .time-value {
+        font-size: 12px;
+        font-weight: 800;
+        margin-top: 4px;
+      }
+      .booking-actions {
+        display: flex;
+        gap: 7px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .empty {
+        text-align: center;
+        padding: 36px 18px;
+        color: var(--muted);
+      }
+      .empty i {
+        font-size: 27px;
+        color: #a7c5f8;
+        margin-bottom: 12px;
+      }
+      .empty strong {
+        display: block;
+        color: var(--ink);
+        font-size: 15px;
+      }
+      .table-wrap {
+        overflow: auto;
+        border: 1px solid var(--line);
+        border-radius: 15px;
+        background: #fff;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        white-space: nowrap;
+        font-size: 12px;
+      }
+      th {
+        text-align: left;
+        background: #f8faff;
+        color: #7a8aa3;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+        padding: 13px 15px;
+        border-bottom: 1px solid var(--line);
+      }
+      td {
+        padding: 13px 15px;
+        border-bottom: 1px solid #edf1f7;
+        vertical-align: middle;
+      }
+      tr:last-child td {
+        border-bottom: 0;
+      }
+      td strong {
+        font-weight: 900;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 17px;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+      }
+      .field label {
+        font-size: 12px;
+        font-weight: 900;
+        color: #42516a;
+      }
+      .field input,
+      .field select,
+      .field textarea {
+        width: 100%;
+        padding: 12px 13px;
+        border: 1px solid #dce5f2;
+        border-radius: 11px;
+        outline: none;
+        background: #fff;
+        color: var(--ink);
+        transition: 0.15s;
+      }
+      .field input:focus,
+      .field select:focus,
+      .field textarea:focus {
+        border-color: #60a5fa;
+        box-shadow: 0 0 0 3px #dbeafe;
+      }
+      .field textarea {
+        min-height: 100px;
+        resize: vertical;
+      }
+      .full {
+        grid-column: 1/-1;
+      }
+      .help {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .auth-wrap {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        background: #fff;
+      }
+      .auth-visual {
+        background: linear-gradient(145deg, #10234b, #1d4ed8 70%, #60a5fa);
+        color: #fff;
+        padding: 8vw;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+      }
+      .auth-visual:after {
+        content: "";
+        position: absolute;
+        width: 420px;
+        height: 420px;
+        border: 1px solid #ffffff24;
+        border-radius: 50%;
+        right: -120px;
+        bottom: -150px;
+        box-shadow:
+          0 0 0 45px #ffffff0b,
+          0 0 0 90px #ffffff08;
+      }
+      .auth-visual h1 {
+        font-size: clamp(35px, 4vw, 57px);
+        line-height: 1.08;
+        letter-spacing: -1.8px;
+        margin: 25px 0 15px;
+        font-weight: 900;
+        max-width: 560px;
+      }
+      .auth-visual p {
+        color: #dbeafe;
+        max-width: 430px;
+        line-height: 1.8;
+      }
+      .auth-features {
+        display: grid;
+        gap: 15px;
+        margin-top: 35px;
+      }
+      .auth-feature {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 800;
+      }
+      .auth-feature i {
+        width: 33px;
+        height: 33px;
+        display: grid;
+        place-items: center;
+        border-radius: 10px;
+        background: #ffffff1c;
+      }
+      .auth-panel {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 25px;
+      }
+      .auth-form {
+        width: 100%;
+        max-width: 410px;
+      }
+      .auth-form .brand {
+        padding: 0 0 30px;
+      }
+      .auth-form h2 {
+        font-size: 29px;
+        font-weight: 900;
+        margin: 0 0 7px;
+      }
+      .auth-form .subtitle {
+        margin-bottom: 26px;
+      }
+      .auth-form .field {
+        margin-bottom: 15px;
+      }
+      .auth-form .btn {
+        width: 100%;
+        padding: 13px;
+      }
+      .auth-bottom {
+        margin-top: 20px;
+        text-align: center;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .auth-bottom a,
+      .text-link {
+        color: var(--blue);
+        font-weight: 900;
+      }
+      .flash-list {
+        display: grid;
+        gap: 8px;
+        margin-bottom: 18px;
+      }
+      .flash {
+        padding: 12px 14px;
+        border-radius: 11px;
+        font-size: 13px;
+        font-weight: 800;
+        background: #eff6ff;
+        color: #1d4ed8;
+      }
+      .flash.error {
+        background: #fff1f2;
+        color: #be123c;
+      }
+      .flash.success {
+        background: #ecfdf5;
+        color: #047857;
+      }
+      .balance-card {
+        background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+        border-radius: 18px;
+        color: #fff;
+        padding: 24px;
+        position: relative;
+        overflow: hidden;
+      }
+      .balance-card:after {
+        content: "₹";
+        position: absolute;
+        font-size: 150px;
+        font-weight: 900;
+        right: 15px;
+        top: -48px;
+        color: #ffffff12;
+      }
+      .balance-card .label {
+        font-size: 12px;
+        color: #dbeafe;
+        font-weight: 800;
+      }
+      .balance-card .amount {
+        font-size: 34px;
+        font-weight: 900;
+        margin: 6px 0 15px;
+      }
+      .balance-card .btn {
+        background: #fff;
+        color: #1d4ed8;
+        position: relative;
+        z-index: 1;
+      }
+      .settings-grid {
+        grid-template-columns: 1fr 1.2fr;
+        align-items: start;
+      }
+      .notice {
+        background: #eff6ff;
+        border: 1px solid #dbeafe;
+        padding: 13px 15px;
+        border-radius: 12px;
+        color: #1d4ed8;
+        font-size: 12px;
+        line-height: 1.6;
+      }
+      .countdown {
+        font-weight: 900;
+        color: #1d4ed8;
+        font-variant-numeric: tabular-nums;
+      }
+      .dark {
+        --ink: #e5edf9;
+        --muted: #9aabc4;
+        --line: #26364f;
+        --pale: #182b49;
+        --bg: #0b1220;
+        --white: #111c2e;
+        --shadow: 0 12px 35px #0002;
+      }
+      .dark .sidebar,
+      .dark .topbar,
+      .dark .stat,
+      .dark .card,
+      .dark .slot-card,
+      .dark .table-wrap,
+      .dark .booking-row {
+        background: #111c2e;
+        border-color: #26364f;
+      }
+      .dark .brand,
+      .dark .nav-link,
+      .dark .section-head h3,
+      .dark .booking-slot strong,
+      .dark .page-title,
+      .dark .topbar h2,
+      .dark td {
+        color: #e5edf9;
+      }
+      .dark .nav-link:hover,
+      .dark .nav-link.active,
+      .dark .stat-icon,
+      .dark .slot-icon,
+      .dark .slot-badge {
+        background: #1b3153;
+        color: #93c5fd;
+      }
+      .dark th {
+        background: #17243a;
+        color: #9aabc4;
+      }
+      .dark .field input,
+      .dark .field select,
+      .dark .field textarea {
+        background: #111c2e;
+        border-color: #34445e;
+        color: #e5edf9;
+      }
+      .dark .btn-outline {
+        background: #111c2e;
+        color: #e5edf9;
+        border-color: #34445e;
+      }
+      .dark .sidebar-bottom {
+        border-color: #26364f;
+      }
+      .dark .profile-mini strong {
+        color: #e5edf9;
+      }
+      .dark .notice {
+        background: #172c4c;
+        border-color: #284d80;
+        color: #bfdbfe;
+      }
+      .mobile-menu {
+        display: none;
+        border: 0;
+        background: #eff6ff;
+        color: var(--blue);
+        border-radius: 10px;
+        width: 40px;
+        height: 40px;
+      }
+      .mobile-overlay {
+        display: none;
+      }
+      .pill {
+        font-size: 10px;
+        font-weight: 900;
+        background: #f1f5f9;
+        color: #475569;
+        padding: 5px 8px;
+        border-radius: 8px;
+      }
+      .admin-toolbar {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .admin-section {
+        margin-top: 24px;
+      }
+      .divider {
+        height: 1px;
+        background: var(--line);
+        margin: 20px 0;
+      }
+      .inline-form {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .inline-form select {
+        max-width: 115px;
+        padding: 7px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+      .timer-note {
+        font-size: 11px;
+        color: var(--amber);
+        font-weight: 900;
+        margin-top: 8px;
+      }
+      @media (max-width: 1200px) {
+        .stats {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .slots-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        .booking-row {
+          grid-template-columns: 1fr 1.3fr;
+        }
+        .booking-actions {
+          grid-column: 1/-1;
+          justify-content: flex-start;
+        }
+      }
+      @media (max-width: 850px) {
+        .sidebar {
+          transform: translateX(-100%);
+          transition: 0.25s;
+        }
+        .sidebar.open {
+          transform: translateX(0);
+        }
+        .main {
+          margin-left: 0;
+        }
+        .mobile-menu {
+          display: grid;
+          place-items: center;
+        }
+        .mobile-overlay.show {
+          display: block;
+          position: fixed;
+          inset: 0;
+          background: #0f172a66;
+          z-index: 15;
+        }
+        .topbar {
+          padding: 0 18px;
+          height: 68px;
+        }
+        .top-date {
+          display: none;
+        }
+        .content {
+          padding: 23px 18px 35px;
+        }
+        .auth-wrap {
+          grid-template-columns: 1fr;
+        }
+        .auth-visual {
+          display: none;
+        }
+        .auth-panel {
+          min-height: 100vh;
+        }
+        .settings-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 580px) {
+        .welcome {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+        .page-title {
+          font-size: 24px;
+        }
+        .stats {
+          gap: 10px;
+        }
+        .stat {
+          padding: 14px;
+          gap: 10px;
+        }
+        .stat-icon {
+          width: 39px;
+          height: 39px;
+        }
+        .stat-value {
+          font-size: 21px;
+        }
+        .slots-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .booking-row {
+          grid-template-columns: 1fr;
+          gap: 14px;
+          padding: 14px;
+        }
+        .booking-actions {
+          grid-column: auto;
+        }
+        .booking-time {
+          grid-template-columns: 1fr 1fr;
+        }
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+        .full {
+          grid-column: auto;
+        }
+        .card {
+          padding: 16px;
+        }
+        .section-head {
+          align-items: flex-start;
+        }
+        .section-head .btn {
+          font-size: 11px;
+          padding: 9px;
+        }
+        .admin-toolbar .btn {
+          flex: 1;
+        }
+        .topbar h2 {
+          font-size: 16px;
+        }
+        .top-right .avatar {
+          display: none;
+        }
+        .auth-panel {
+          padding: 25px 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="auth-wrap">
+      <section class="auth-visual">
+        <div class="brand" style="color: #fff; padding: 0">
+          <span class="brand-mark" style="background: #ffffff24"
+            ><i class="fa-solid fa-square-parking"></i
+          ></span>
+          ParkEase
+        </div>
+        <h1>Parking that moves at your pace.</h1>
+        <p>
+          Book your space, arrive without the hassle, and keep every parking
+          detail in one beautifully simple place.
+        </p>
+        <div class="auth-features">
+          <div class="auth-feature">
+            <i class="fa-solid fa-location-dot"></i> Live parking availability
+          </div>
+          <div class="auth-feature">
+            <i class="fa-solid fa-shield-halved"></i> Smart RFID and app access
+          </div>
+          <div class="auth-feature">
+            <i class="fa-solid fa-wallet"></i> Clear charges and wallet tracking
+          </div>
+        </div>
+      </section>
+      <section class="auth-panel">
+        <div class="auth-form">
+          <div class="brand">
+            <span class="brand-mark"
+              ><i class="fa-solid fa-square-parking"></i
+            ></span>
+            ParkEase
+          </div>
+          {% with messages = get_flashed_messages(with_categories=true) %}{% if
+          messages %}
+          <div class="flash-list">
+            {% for category,message in messages %}
+            <div class="flash {{category}}">{{message}}</div>
+            {% endfor %}
+          </div>
+          {% endif %}{% endwith %} {% block auth_content %}{% endblock %}
+        </div>
+      </section>
+    </div>
+    <style>
+      .modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: #0f172a80;
+        z-index: 50;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      .modal.show {
+        display: flex;
+      }
+      .modal-card {
+        width: 100%;
+        max-width: 420px;
+        background: #fff;
+        color: #17233c;
+        padding: 26px;
+        border-radius: 20px;
+        position: relative;
+        box-shadow: 0 25px 80px #0003;
+      }
+      .modal-close {
+        position: absolute;
+        right: 16px;
+        top: 16px;
+        border: 0;
+        background: #f1f5f9;
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        color: #475569;
+      }
+      .dark .modal-card {
+        background: #111c2e;
+        color: #e5edf9;
+      }
+      .dark .modal-close {
+        background: #26364f;
+        color: #e5edf9;
+      }
+    </style>
+    <script>
+      function toggleSidebar() {
+        document.getElementById("sidebar")?.classList.toggle("open");
+        document.getElementById("mobileOverlay")?.classList.toggle("show");
+      }
+      function toggleTheme() {
+        document.body.classList.toggle("dark");
+        try {
+          localStorage.setItem(
+            "parkwise-theme",
+            document.body.classList.contains("dark") ? "dark" : "light",
+          );
+        } catch (e) {}
+      }
+      try {
+        if (localStorage.getItem("parkwise-theme") === "dark")
+          document.body.classList.add("dark");
+      } catch (e) {}
+      const today = document.getElementById("todayText");
+      if (today)
+        today.textContent = new Date().toLocaleDateString(undefined, {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+      function showExtend(id, end) {
+        const val = prompt(
+          "Enter new end date/time (YYYY-MM-DDTHH:MM). Current end: " +
+            new Date(end).toLocaleString(),
+        );
+        if (!val) return;
+        const f = document.createElement("form");
+        f.method = "post";
+        f.action = "/booking/" + id + "/extend";
+        const i = document.createElement("input");
+        i.type = "hidden";
+        i.name = "new_end_at";
+        i.value = new Date(val).toISOString();
+        f.appendChild(i);
+        document.body.appendChild(f);
+        f.submit();
+      }
+      function updateCountdowns() {
+        document.querySelectorAll("[data-countdown]").forEach((el) => {
+          const raw = el.dataset.countdown;
+          if (!raw) return;
+          const target = new Date(raw).getTime();
+          const diff = target - Date.now();
+          const row = el.closest(".booking-row");
+          const reminder = row?.querySelector(".reminder");
+          if (diff <= 0) {
+            el.textContent = "Reservation time ended";
+            if (reminder) reminder.style.display = "block";
+          } else {
+            const total = Math.floor(diff / 1000);
+            const d = Math.floor(total / 86400),
+              h = Math.floor((total % 86400) / 3600),
+              m = Math.floor((total % 3600) / 60),
+              s = total % 60;
+            el.textContent =
+              (d ? d + "d " : "") +
+              String(h).padStart(2, "0") +
+              ":" +
+              String(m).padStart(2, "0") +
+              ":" +
+              String(s).padStart(2, "0");
+            if (reminder)
+              reminder.style.display = diff <= 600000 ? "block" : "none";
+          }
+        });
+      }
+      updateCountdowns();
+      setInterval(updateCountdowns, 1000);
+      document.querySelectorAll(".local-time[data-time]").forEach((el) => {
+        const d = new Date(el.dataset.time);
+        if (!isNaN(d))
+          el.textContent = d.toLocaleString([], {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+      });
+      const startInput = document.getElementById("startAt"),
+        endInput = document.getElementById("endAt"),
+        costPreview = document.getElementById("costPreview"),
+        waitStart = document.getElementById("waitStart"),
+        waitEnd = document.getElementById("waitEnd");
+      const slotSelect = document.getElementById("slotSelect"),
+        availabilityHelp = document.getElementById("availabilityHelp");
+      async function loadAvailability() {
+        if (
+          !startInput ||
+          !endInput ||
+          !slotSelect ||
+          !startInput.value ||
+          !endInput.value
+        )
+          return;
+        const s = new Date(startInput.value),
+          e = new Date(endInput.value);
+        if (!(e > s)) {
+          if (availabilityHelp)
+            availabilityHelp.textContent = "End time must be after start time.";
+          return;
+        }
+        if (availabilityHelp)
+          availabilityHelp.textContent = "Checking live availability…";
+        try {
+          const response = await fetch(
+            "/api/availability?start_at=" +
+              encodeURIComponent(s.toISOString()) +
+              "&end_at=" +
+              encodeURIComponent(e.toISOString()),
+            { headers: { Accept: "application/json" } },
+          );
+          const data = await response.json();
+          const old = slotSelect.value;
+          slotSelect.innerHTML = "";
+          if (!response.ok || !Array.isArray(data.slots)) {
+            slotSelect.add(new Option("Unable to check availability", ""));
+            if (availabilityHelp)
+              availabilityHelp.textContent =
+                data.error || "Availability check failed.";
+            return;
+          }
+          const available = data.slots.filter((x) => x.available);
+          if (!available.length) {
+            slotSelect.add(new Option("No slots available for this time", ""));
+            if (availabilityHelp)
+              availabilityHelp.textContent =
+                "No slot is available for this period. Join the notification queue on the right.";
+          } else {
+            slotSelect.add(new Option("Select an available slot", ""));
+            available.forEach((x) =>
+              slotSelect.add(new Option(x.slot_id + " · Available", x.slot_id)),
+            );
+            if (available.some((x) => x.slot_id === old))
+              slotSelect.value = old;
+            if (availabilityHelp)
+              availabilityHelp.textContent =
+                available.length +
+                " slot(s) available for the selected period. Availability is checked again at confirmation.";
+          }
+        } catch (e) {
+          if (availabilityHelp)
+            availabilityHelp.textContent =
+              "Could not reach the availability service. Please try again.";
+        }
+      }
+      [startInput, endInput].forEach((el) =>
+        el?.addEventListener("change", () => {
+          updateCost();
+          loadAvailability();
+        }),
+      );
+
+      function updateCost() {
+        if (!startInput || !endInput) return;
+        const s = new Date(startInput.value).getTime(),
+          e = new Date(endInput.value).getTime();
+        if (waitStart)
+          waitStart.value = startInput.value
+            ? new Date(startInput.value).toISOString()
+            : "";
+        if (waitEnd)
+          waitEnd.value = endInput.value
+            ? new Date(endInput.value).toISOString()
+            : "";
+        if (s && e > s) {
+          const hours = Math.ceil((e - s) / 3600000);
+          if (costPreview)
+            costPreview.textContent = "₹" + (hours * 20).toFixed(2);
+        } else if (costPreview) costPreview.textContent = "₹0.00";
+      }
+
+      if (startInput) {
+        const now = new Date(Date.now() + 5 * 60000);
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        startInput.min = now.toISOString().slice(0, 16);
+      }
+      document
+        .getElementById("bookingForm")
+        ?.addEventListener("submit", (e) => {
+          const s = new Date(startInput.value),
+            en = new Date(endInput.value);
+          if (!(en > s)) {
+            e.preventDefault();
+            alert("End time must be later than start time.");
+            return;
+          }
+          if (en - s > 24 * 3600000) {
+            e.preventDefault();
+            alert("Maximum booking duration is 24 hours.");
+            return;
+          }
+          const hrs = Math.ceil((en - s) / 3600000);
+          if (
+            !confirm(
+              "Confirm booking for " +
+                hrs +
+                " hour(s)? Total: ₹" +
+                (hrs * 20).toFixed(2) +
+                ". This amount will be deducted from your wallet.",
+            )
+          )
+            e.preventDefault();
+        });
+    </script>
+  </body>
+</html>

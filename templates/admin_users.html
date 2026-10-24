@@ -1,0 +1,272 @@
+{% extends 'base.html' %} {% block page_content %}
+<div class="welcome">
+  <div>
+    <div class="eyebrow">Accounts and access</div>
+    <h1 class="page-title">User management</h1>
+    <p class="subtitle">
+      Blacklist or restore access for registered parking users.
+    </p>
+  </div>
+
+  <div class="admin-toolbar">
+    <a
+      class="btn btn-outline"
+      href="{{ url_for('export_admin', kind='users', fmt='csv') }}"
+    >
+      Export CSV
+    </a>
+    <a
+      class="btn btn-primary"
+      href="{{ url_for('export_admin', kind='users', fmt='pdf') }}"
+    >
+      Export PDF
+    </a>
+  </div>
+</div>
+
+<!-- Search and filters -->
+<div class="card" style="margin-bottom: 20px; padding: 20px">
+  <div
+    style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px"
+  >
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <strong>Search Users</strong>
+  </div>
+
+  <div
+    style="
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+    "
+  >
+    <div>
+      <label for="searchName">Name</label>
+      <input
+        type="text"
+        id="searchName"
+        placeholder="Search by name..."
+        class="form-control user-search"
+      />
+    </div>
+
+    <div>
+      <label for="searchEmail">Email</label>
+      <input
+        type="text"
+        id="searchEmail"
+        placeholder="Search by email..."
+        class="form-control user-search"
+      />
+    </div>
+
+    <div>
+      <label for="searchMobile">Mobile</label>
+      <input
+        type="text"
+        id="searchMobile"
+        placeholder="Search by mobile..."
+        class="form-control user-search"
+      />
+    </div>
+
+    <div>
+      <label for="searchRfid">RFID UID</label>
+      <input
+        type="text"
+        id="searchRfid"
+        placeholder="Search by RFID UID..."
+        class="form-control user-search"
+      />
+    </div>
+  </div>
+
+  <div
+    style="
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    "
+  >
+    <span class="subtitle" id="userCount" aria-live="polite">
+      Showing {{ admin_users|length }} users
+    </span>
+    <button
+      type="button"
+      class="btn btn-outline btn-sm"
+      onclick="clearUserSearch()"
+    >
+      <i class="fa-solid fa-rotate-left"></i> Clear filters
+    </button>
+  </div>
+</div>
+
+<!-- Users table -->
+<div class="table-wrap">
+  <table id="usersTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Mobile</th>
+        <th>RFID UID</th>
+        <th>Wallet</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {% for u in admin_users %}
+      <tr
+        class="user-row"
+        data-name="{{ u.name or '' }}"
+        data-email="{{ u.email or '' }}"
+        data-mobile="{{ u.mobile or '' }}"
+        data-rfid="{{ u.rfid or '' }}"
+      >
+        <td><strong>{{ u.name or '—' }}</strong></td>
+        <td>{{ u.email or '—' }}</td>
+        <td>{{ u.mobile or '—' }}</td>
+        <td>{{ u.rfid or '—' }}</td>
+        <td>₹{{ '%.2f'|format(u.wallet_balance or 0) }}</td>
+
+        <td>
+          <span
+            class="status {{ 'status-cancelled' if u.blacklisted else 'status-active' }}"
+          >
+            {{ 'Blacklisted' if u.blacklisted else 'Active' }}
+          </span>
+        </td>
+
+        <td>
+          {% if u.blacklisted %}
+          <form
+            method="post"
+            action="{{ url_for('admin_whitelist', user_id=u._id) }}"
+          >
+            <button type="submit" class="btn btn-success btn-sm">
+              Whitelist
+            </button>
+          </form>
+          {% else %}
+          <form
+            method="post"
+            action="{{ url_for('admin_blacklist', user_id=u._id) }}"
+          >
+            <button type="submit" class="btn btn-danger btn-sm">
+              Blacklist
+            </button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr id="noUsersRow">
+        <td colspan="7" class="muted">No users registered.</td>
+      </tr>
+      {% endfor %}
+
+      <tr id="noMatchesRow" style="display: none">
+        <td colspan="7" class="muted" style="text-align: center; padding: 24px">
+          <i class="fa-solid fa-user-slash"></i>
+          No users match your search.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .user-search {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 42px;
+    padding: 10px 12px;
+    border: 1px solid var(--border, #d1d5db);
+    border-radius: 8px;
+    background: var(--card-bg, #ffffff);
+    color: var(--text, #111827);
+    outline: none;
+  }
+
+  .user-search:focus {
+    border-color: #4299e1;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.15);
+  }
+
+  .card label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  #usersTable tbody tr[style*="display: none"] {
+    display: none !important;
+  }
+</style>
+
+<script>
+  (function () {
+    const fields = {
+      name: document.getElementById("searchName"),
+      email: document.getElementById("searchEmail"),
+      mobile: document.getElementById("searchMobile"),
+      rfid: document.getElementById("searchRfid"),
+    };
+
+    const rows = Array.from(document.querySelectorAll("#usersTable .user-row"));
+    const count = document.getElementById("userCount");
+    const noMatches = document.getElementById("noMatchesRow");
+
+    function normalize(value) {
+      return (value || "").trim().toLowerCase();
+    }
+
+    function filterUsers() {
+      const filters = {
+        name: normalize(fields.name.value),
+        email: normalize(fields.email.value),
+        mobile: normalize(fields.mobile.value),
+        rfid: normalize(fields.rfid.value),
+      };
+
+      let visible = 0;
+
+      rows.forEach(function (row) {
+        const matches = Object.keys(filters).every(function (key) {
+          return (row.dataset[key] || "").toLowerCase().includes(filters[key]);
+        });
+
+        row.style.display = matches ? "" : "none";
+
+        if (matches) visible++;
+      });
+
+      noMatches.style.display = rows.length > 0 && visible === 0 ? "" : "none";
+
+      count.textContent =
+        "Showing " + visible + " of " + rows.length + " users";
+    }
+
+    Object.values(fields).forEach(function (field) {
+      field.addEventListener("input", filterUsers);
+    });
+
+    window.clearUserSearch = function () {
+      Object.values(fields).forEach(function (field) {
+        field.value = "";
+      });
+
+      filterUsers();
+      fields.name.focus();
+    };
+
+    filterUsers();
+  })();
+</script>
+{% endblock %}

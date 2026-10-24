@@ -1,0 +1,69 @@
+{% extends 'base.html' %} {% block page_content %}
+<div class="welcome">
+  <div>
+    <div class="eyebrow">Parking history</div>
+    <h1 class="page-title">Past bookings</h1>
+    <p class="subtitle">
+      Completed, cancelled, and missed reservations in card format.
+    </p>
+  </div>
+  <a class="btn btn-outline" href="{{url_for('dashboard')}}"
+    ><i class="fa-solid fa-arrow-left"></i> Dashboard</a
+  >
+</div>
+<div class="history-grid">
+  {% for b in past_bookings %}
+  <article class="history-card">
+    <div class="history-head">
+      <div class="booking-slot">
+        <div class="slot-badge">{{b.slot_id}}</div>
+        <div>
+          <strong>Parking {{b.status|title|replace('_',' ')}}</strong
+          ><small
+            >{{b.created_at.strftime('%d %b %Y') if b.created_at else 'Booking
+            history'}}</small
+          >
+        </div>
+      </div>
+      <span class="status status-{{b.status|lower}}"
+        >{{b.status|replace('_',' ')}}</span
+      >
+    </div>
+    <div class="history-facts">
+      <div class="history-fact">
+        <small>Entry time</small
+        ><strong
+          >{{b.actual_entry_at.strftime('%d %b %Y, %I:%M %p') if
+          b.actual_entry_at else '—'}}</strong
+        >
+      </div>
+      <div class="history-fact">
+        <small>Exit time</small
+        ><strong
+          >{{b.actual_exit_at.strftime('%d %b %Y, %I:%M %p') if b.actual_exit_at
+          else '—'}}</strong
+        >
+      </div>
+      <div class="history-fact">
+        <small>Booking amount</small
+        ><strong>₹{{'%.2f'|format(b.booking_amount or 0)}}</strong>
+      </div>
+      <div class="history-fact">
+        <small>Overstay penalties</small
+        ><strong
+          >₹{{'%.2f'|format(b.penalty_charged or ((b.overstay_charges_count or
+          0)*40))}}</strong
+        >
+      </div>
+    </div>
+  </article>
+  {% else %}
+  <div class="card empty" style="grid-column: 1/-1">
+    <i class="fa-solid fa-clock-rotate-left"></i
+    ><strong>No past bookings yet</strong>
+    <p>Your completed or cancelled bookings will appear here.</p>
+    <a class="btn btn-primary" href="{{url_for('book')}}">Book a slot</a>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends 'base.html' %} {% block page_content %}
+<div class="welcome">
+  <div>
+    <div class="eyebrow">Administration</div>
+    <h1 class="page-title">Overview</h1>
+    <p class="subtitle">
+      A live summary of parking operations and financial activity.
+    </p>
+  </div>
+  <div class="admin-toolbar">
+    <a
+      class="btn btn-outline"
+      href="{{url_for('export_admin',kind='bookings',fmt='csv')}}"
+      ><i class="fa-solid fa-file-csv"></i> Export bookings CSV</a
+    ><a
+      class="btn btn-primary"
+      href="{{url_for('export_admin',kind='bookings',fmt='pdf')}}"
+      ><i class="fa-solid fa-file-pdf"></i> Export bookings PDF</a
+    >
+  </div>
+</div>
+<div class="grid stats">
+  <div class="stat">
+    <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+    <div>
+      <div class="stat-label">Registered users</div>
+      <div class="stat-value">{{stats.users}}</div>
+    </div>
+  </div>
+  <div class="stat">
+    <div class="stat-icon"><i class="fa-solid fa-calendar-check"></i></div>
+    <div>
+      <div class="stat-label">Current bookings</div>
+      <div class="stat-value">{{stats.active_bookings}}</div>
+    </div>
+  </div>
+  <div class="stat">
+    <div class="stat-icon"><i class="fa-solid fa-flag"></i></div>
+    <div>
+      <div class="stat-label">Open reports</div>
+      <div class="stat-value">{{stats.open_reports}}</div>
+    </div>
+  </div>
+  <div class="stat">
+    <div class="stat-icon"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+    <div>
+      <div class="stat-label">Debits recorded</div>
+      <div class="stat-value">₹{{'%.2f'|format(stats.revenue)}}</div>
+    </div>
+  </div>
+</div>
+<div class="grid module-grid">
+  <a class="card" href="{{url_for('admin_slots_page')}}"
+    ><div class="stat-icon"><i class="fa-solid fa-car-side"></i></div>
+    <h3>Slot management</h3>
+    <p class="muted">View sensors and control gates.</p>
+    <span class="text-link">Manage slots →</span></a
+  ><a class="card" href="{{url_for('admin_users_page')}}"
+    ><div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+    <h3>User management</h3>
+    <p class="muted">Review accounts and access status.</p>
+    <span class="text-link">Manage users →</span></a
+  ><a class="card" href="{{url_for('admin_bookings_page')}}"
+    ><div class="stat-icon"><i class="fa-solid fa-calendar-check"></i></div>
+    <h3>Bookings</h3>
+    <p class="muted">Inspect reservations and parking sessions.</p>
+    <span class="text-link">View bookings →</span></a
+  ><a class="card" href="{{url_for('admin_reports_page')}}"
+    ><div class="stat-icon"><i class="fa-solid fa-flag"></i></div>
+    <h3>Reports</h3>
+    <p class="muted">Review and resolve user issues.</p>
+    <span class="text-link">Review reports →</span></a
+  ><a class="card" href="{{url_for('admin_transactions_page')}}"
+    ><div class="stat-icon"><i class="fa-solid fa-receipt"></i></div>
+    <h3>Transactions</h3>
+    <p class="muted">Review wallet ledger and charges.</p>
+    <span class="text-link">View transactions →</span></a
+  >
+</div>
+{% endblock %}

@@ -1,0 +1,8 @@
+{% extends 'auth_base.html' %} {% block auth_content %}
+
+<h2>Configuration required</h2>
+<p class="subtitle">{{error_message}}</p>
+<div class="notice">
+  Set the required environment variables and restart the application.
+</div>
+{% endblock %}

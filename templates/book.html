@@ -1,0 +1,150 @@
+{% extends 'base.html' %} {% block page_content %}
+<div class="welcome">
+  <div>
+    <div class="eyebrow">Reserve your space</div>
+    <h1 class="page-title">Book a parking slot</h1>
+    <p class="subtitle">
+      Choose your time. We'll show spaces that can be booked for that period.
+    </p>
+  </div>
+  <div class="pill">
+    <i class="fa-solid fa-wallet"></i> Balance
+    ₹{{'%.2f'|format(wallet_balance)}}
+  </div>
+</div>
+{% if user.blacklisted %}
+<div class="flash error">
+  Your account is blacklisted. Please contact the administrator.
+</div>
+{% endif %}
+<div class="grid booking-layout">
+  <div class="card">
+    <div class="section-head" style="margin-top: 0">
+      <div>
+        <h3><i class="fa-regular fa-calendar"></i> Booking details</h3>
+        <p>Select start and end time to check availability.</p>
+      </div>
+    </div>
+    <form method="post" id="bookingForm">
+      <div class="form-grid">
+        <div class="field">
+          <label>Start date & time</label
+          ><input type="datetime-local" name="start_at" id="startAt" required />
+        </div>
+        <div class="field">
+          <label>End date & time</label
+          ><input type="datetime-local" name="end_at" id="endAt" required />
+        </div>
+        <div class="field full">
+          <label>Choose a slot</label
+          ><select name="slot_id" id="slotSelect" required>
+            <option value="">Select a time first</option>
+            {% for s in slots %}
+            <option value="{{s._id}}">
+              {{s._id}} · {{'Occupied' if s.occupied else ('Available' if
+              s.sensor_known else 'Sensor status unknown')}}
+            </option>
+            {% endfor %}</select
+          ><span class="help" id="availabilityHelp"
+            >Availability is checked again on the server when you confirm.</span
+          >
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 16px;
+        "
+      >
+        <div>
+          <div class="muted" style="font-size: 12px; font-weight: 800">
+            Estimated booking cost
+          </div>
+          <div style="font-size: 27px; font-weight: 900" id="costPreview">
+            ₹0.00
+          </div>
+        </div>
+        <div class="muted" style="font-size: 11px; text-align: right">
+          ₹20 per hour<br />Partial hours rounded up
+        </div>
+      </div>
+      <button
+        class="btn btn-primary"
+        style="width: 100%"
+        {%
+        if
+        user.blacklisted
+        %}disabled{%
+        endif
+        %}
+      >
+        <i class="fa-solid fa-lock"></i> Confirm booking & pay
+      </button>
+    </form>
+  </div>
+  <div class="grid" style="gap: 14px">
+    <div class="balance-card">
+      <div class="label">Available wallet balance</div>
+      <div class="amount">₹{{'%.2f'|format(wallet_balance)}}</div>
+      <a href="{{url_for('settings')}}" class="btn"
+        ><i class="fa-solid fa-plus"></i> Add funds</a
+      >
+    </div>
+    <div class="card">
+      <h3 style="margin: 0 0 10px; font-size: 15px">Can't find a slot?</h3>
+      <p class="muted" style="font-size: 12px; line-height: 1.7">
+        Join the notification queue for a specific slot and time. We'll email
+        you if it becomes available. You must return here and complete a normal
+        booking.
+      </p>
+      <form
+        method="post"
+        action="{{url_for('join_waitlist')}}"
+        class="grid"
+        style="gap: 10px"
+      >
+        <div class="field">
+          <label>Slot to watch</label
+          ><select name="slot_id" required>
+            {% for sid in ['P1','P2','P3','P4','P5'] %}
+            <option>{{sid}}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <input type="hidden" name="start_at" id="waitStart" /><input
+          type="hidden"
+          name="end_at"
+          id="waitEnd"
+        /><button class="btn btn-outline">
+          <i class="fa-regular fa-bell"></i> Notify me
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+<div class="section-head">
+  <div>
+    <h3>Slot overview</h3>
+    <p>Sensor status as last reported by the ESP32.</p>
+  </div>
+</div>
+<div class="grid slots-grid">
+  {% for s in slots %}
+  <div class="slot-card">
+    <div class="slot-top">
+      <div class="slot-id">{{s._id}}</div>
+      <div class="slot-icon"><i class="fa-solid fa-car-side"></i></div>
+    </div>
+    <span
+      class="status {{'status-occupied' if s.occupied else ('status-available' if s.sensor_known else 'status-unknown')}}"
+      >{{'Occupied' if s.occupied else ('Available' if s.sensor_known else
+      'Unknown')}}</span
+    >
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends 'base.html' %} {% block page_content %}
+<div class="welcome">
+  <div>
+    <div class="eyebrow">Customer support</div>
+    <h1 class="page-title">Report an issue</h1>
+    <p class="subtitle">
+      Send the parking administrator details about a slot, barrier, sensor, or
+      billing problem.
+    </p>
+  </div>
+</div>
+<div class="grid support-layout">
+  <div class="card">
+    <div class="section-head" style="margin-top: 0">
+      <div>
+        <h3><i class="fa-solid fa-flag"></i> Issue details</h3>
+        <p>Provide enough information for the admin to investigate.</p>
+      </div>
+    </div>
+    <form method="post" action="{{url_for('create_report')}}" class="form-grid">
+      <div class="field">
+        <label>Report type</label
+        ><select name="category" required>
+          <option>Slot occupied</option>
+          <option>Barrier not working</option>
+          <option>Sensor issue</option>
+          <option>Billing issue</option>
+          <option>Booking issue</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Related slot</label
+        ><select name="slot_id">
+          <option value="">Not applicable</option>
+          {% for s in slots %}
+          <option value="{{s._id}}">{{s._id}}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field full">
+        <label>Report title</label
+        ><input
+          name="title"
+          required
+          maxlength="120"
+          placeholder="e.g. Barrier did not open for booking"
+        />
+      </div>
+      <div class="field full">
+        <label>Details</label
+        ><textarea
+          name="description"
+          required
+          rows="5"
+          maxlength="2000"
+          placeholder="Tell us what happened, when it happened, and any relevant booking details."
+        ></textarea>
+      </div>
+      <div class="full">
+        <button class="btn btn-primary">
+          <i class="fa-solid fa-paper-plane"></i> Submit report
+        </button>
+      </div>
+    </form>
+  </div>
+  <div class="grid" style="gap: 14px">
+    <div class="card">
+      <div class="stat-icon"><i class="fa-solid fa-headset"></i></div>
+      <h3>What happens next?</h3>
+      <p class="muted" style="line-height: 1.7">
+        Your report is saved for the administrator. If email notifications are
+        configured, the admin will also receive an email. You can return to the
+        dashboard while it is reviewed.
+      </p>
+    </div>
+    <div class="card">
+      <div class="stat-icon"><i class="fa-solid fa-shield-halved"></i></div>
+      <h3>Safety first</h3>
+      <p class="muted" style="line-height: 1.7">
+        Do not attempt to force a barrier or enter an occupied slot. Report the
+        issue and wait for instructions.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

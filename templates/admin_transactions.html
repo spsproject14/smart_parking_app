@@ -1,0 +1,85 @@
+{% extends 'base.html' %} {% block page_content %}
+<div class="welcome">
+  <div>
+    <div class="eyebrow">Financial ledger</div>
+    <h1 class="page-title">Transactions</h1>
+    <p class="subtitle">
+      Wallet credits, booking debits, refunds, and penalties.
+    </p>
+  </div>
+
+  <div class="admin-toolbar">
+    <a
+      class="btn btn-outline"
+      href="{{ url_for('export_admin', kind='transactions', fmt='csv') }}"
+    >
+      <i class="fa-solid fa-file-csv"></i> Export CSV
+    </a>
+    <a
+      class="btn btn-primary"
+      href="{{ url_for('export_admin', kind='transactions', fmt='pdf') }}"
+    >
+      <i class="fa-solid fa-file-pdf"></i> Export PDF
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-responsive" style="overflow-x: auto">
+    <table class="data-table" style="width: 100%; border-collapse: collapse">
+      <thead>
+        <tr>
+          <th style="text-align: left; padding: 14px">#</th>
+          <th style="text-align: left; padding: 14px">Transaction Type</th>
+          <th style="text-align: left; padding: 14px">Description</th>
+          <th style="text-align: left; padding: 14px">User ID</th>
+          <th style="text-align: right; padding: 14px">Amount</th>
+          <th style="text-align: left; padding: 14px">Date &amp; Time</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for t in admin_transactions %}
+        <tr>
+          <td style="padding: 14px">{{ loop.index }}</td>
+
+          <td style="padding: 14px">
+            <span class="pill"> {{ t.type|replace('_', ' ')|title }} </span>
+          </td>
+
+          <td style="padding: 14px; min-width: 180px">{{ t.note or '—' }}</td>
+
+          <td style="padding: 14px; white-space: nowrap">{{ t.user_id }}</td>
+
+          <td
+            style="padding:14px; text-align:right; white-space:nowrap;
+                               font-weight:800;
+                               color:{{ '#059669' if t.amount > 0 else '#dc2626' }};"
+          >
+            {{ '+' if t.amount > 0 else '' }}₹{{ '%.2f'|format(t.amount) }}
+          </td>
+
+          <td style="padding: 14px; white-space: nowrap">
+            {% if t.created_at %} {{ t.created_at.strftime('%d %b %Y, %I:%M %p')
+            }} {% else %} — {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" style="padding: 40px 16px; text-align: center">
+            <i
+              class="fa-solid fa-receipt"
+              style="font-size: 28px; display: block; margin-bottom: 12px"
+            ></i>
+            <strong>No transactions recorded</strong>
+            <div class="subtitle" style="margin-top: 6px">
+              Transactions will appear here when financial activity occurs.
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends 'auth_base.html' %} {% block auth_content %}
+<h2>Create your account</h2>
+<p class="subtitle">Get started with ₹500 in your wallet.</p>
+<form method="post" action="{{url_for('signup')}}">
+  <div class="field">
+    <label>Full name</label
+    ><input name="name" placeholder="Your full name" required maxlength="100" />
+  </div>
+  <div class="field">
+    <label>Email address</label
+    ><input type="email" name="email" placeholder="you@example.com" required />
+  </div>
+  <div class="field">
+    <label>Mobile number</label
+    ><input
+      name="mobile"
+      inputmode="tel"
+      placeholder="Mobile number"
+      required
+      maxlength="20"
+    />
+  </div>
+  <div class="field">
+    <label>RFID UID <span class="muted">(optional)</span></label
+    ><input name="rfid" placeholder="e.g. A1B2C3D4" />
+  </div>
+  <div class="field">
+    <label>Password</label
+    ><input
+      type="password"
+      name="password"
+      placeholder="At least 8 characters"
+      required
+      minlength="8"
+    />
+  </div>
+  <button class="btn btn-primary" type="submit">
+    Create account <i class="fa-solid fa-arrow-right"></i>
+  </button>
+</form>
+<div class="auth-bottom">
+  Already registered? <a href="{{url_for('login')}}">Sign in</a>
+</div>
+{% endblock %}

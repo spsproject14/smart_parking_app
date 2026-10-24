@@ -1,0 +1,49 @@
+{% extends 'base.html' %} {% block page_content %}
+<div class="welcome">
+  <div>
+    <div class="eyebrow">Hardware controls</div>
+    <h1 class="page-title">Slot management</h1>
+    <p class="subtitle">
+      Review the latest ESP32 sensor state and queue gate commands.
+    </p>
+  </div>
+</div>
+<div class="grid slots-grid">
+  {% for s in admin_slots %}
+  <div class="slot-card">
+    <div class="slot-top">
+      <div class="slot-id">{{s._id}}</div>
+      <div class="slot-icon"><i class="fa-solid fa-car-side"></i></div>
+    </div>
+    <div style="margin-bottom: 12px">
+      <span
+        class="status {{'status-occupied' if s.occupied else ('status-available' if s.sensor_known else 'status-unknown')}}"
+        >{{'Occupied' if s.occupied else ('Available' if s.sensor_known else
+        'Unknown')}}</span
+      >
+    </div>
+    <p class="help">Gate: {{s.gate_state or 'Unknown'}}</p>
+    <p class="help">
+      Sensor: {{s.sensor_updated_at.strftime('%d %b %H:%M:%S') if
+      s.sensor_updated_at else 'No reading received'}}
+    </p>
+    <div style="display: flex; gap: 6px; flex-wrap: wrap">
+      <form method="post" action="{{url_for('admin_gate',slot_id=s._id)}}">
+        <input type="hidden" name="action" value="OPEN_GATE" /><button
+          class="btn btn-primary btn-sm"
+        >
+          <i class="fa-solid fa-door-open"></i> Open
+        </button>
+      </form>
+      <form method="post" action="{{url_for('admin_gate',slot_id=s._id)}}">
+        <input type="hidden" name="action" value="CLOSE_GATE" /><button
+          class="btn btn-outline btn-sm"
+        >
+          <i class="fa-solid fa-door-closed"></i> Close
+        </button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

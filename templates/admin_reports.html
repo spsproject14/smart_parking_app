@@ -1,0 +1,130 @@
+{% extends 'base.html' %} {% block page_content %}
+<div class="welcome">
+  <div>
+    <div class="eyebrow">Customer support</div>
+    <h1 class="page-title">Issue reports</h1>
+    <p class="subtitle">
+      Resolve occupied-slot, barrier, sensor, and billing reports.
+    </p>
+  </div>
+
+  <div class="admin-toolbar">
+    <a
+      class="btn btn-outline"
+      href="{{ url_for('export_admin', kind='reports', fmt='csv') }}"
+    >
+      <i class="fa-solid fa-file-csv"></i> Export CSV
+    </a>
+    <a
+      class="btn btn-primary"
+      href="{{ url_for('export_admin', kind='reports', fmt='pdf') }}"
+    >
+      <i class="fa-solid fa-file-pdf"></i> Export PDF
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-wrap" style="overflow-x: auto">
+    <table style="width: 100%; border-collapse: collapse">
+      <thead>
+        <tr>
+          <th style="text-align: left; padding: 14px">#</th>
+          <th style="text-align: left; padding: 14px">Category</th>
+          <th style="text-align: left; padding: 14px">Issue</th>
+          <th style="text-align: left; padding: 14px">Reported By</th>
+          <th style="text-align: left; padding: 14px">Slot</th>
+          <th style="text-align: left; padding: 14px">Description</th>
+          <th style="text-align: left; padding: 14px">Date &amp; Time</th>
+          <th style="text-align: left; padding: 14px">Status</th>
+          <th style="text-align: left; padding: 14px">Action</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for r in admin_reports %}
+        <tr>
+          <td style="padding: 14px">{{ loop.index }}</td>
+
+          <td style="padding: 14px; white-space: nowrap">
+            <span class="pill">{{ r.category }}</span>
+          </td>
+
+          <td style="padding: 14px; min-width: 160px">
+            <strong>{{ r.title }}</strong>
+          </td>
+
+          <td style="padding: 14px; min-width: 180px">
+            <strong>{{ r.name }}</strong>
+            <div class="muted" style="font-size: 12px; margin-top: 4px">
+              {{ r.email }}
+            </div>
+          </td>
+
+          <td style="padding: 14px; white-space: nowrap">
+            {{ r.slot_id or 'Not specified' }}
+          </td>
+
+          <td
+            style="
+              padding: 14px;
+              min-width: 240px;
+              max-width: 350px;
+              white-space: normal;
+              line-height: 1.5;
+            "
+          >
+            {{ r.description }}
+          </td>
+
+          <td style="padding: 14px; white-space: nowrap">
+            {% if r.created_at %} {{ r.created_at.strftime('%d %b %Y, %I:%M %p')
+            }} {% else %} — {% endif %}
+          </td>
+
+          <td style="padding: 14px; white-space: nowrap">
+            <span
+              class="status {{ 'status-solved' if r.status == 'SOLVED' else 'status-open' }}"
+            >
+              {{ r.status }}
+            </span>
+          </td>
+
+          <td style="padding: 14px; white-space: nowrap">
+            {% if r.status != 'SOLVED' %}
+            <form
+              method="post"
+              action="{{ url_for('solve_report', report_id=r._id) }}"
+            >
+              <button type="submit" class="btn btn-success btn-sm">
+                <i class="fa-solid fa-check"></i>
+                Mark solved
+              </button>
+            </form>
+            {% else %}
+            <span class="muted">
+              <i class="fa-solid fa-circle-check"></i>
+              Resolved
+            </span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="9" style="padding: 40px 16px; text-align: center">
+            <i
+              class="fa-solid fa-flag"
+              style="font-size: 28px; display: block; margin-bottom: 12px"
+            ></i>
+            <strong>No reports submitted</strong>
+            <div class="muted" style="margin-top: 6px">
+              Customer issue reports will appear here.
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
