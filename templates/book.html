@@ -1,4 +1,103 @@
 {% extends 'base.html' %} {% block page_content %}
+
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
+/>
+<style>
+  .date-time-picker {
+    cursor: pointer;
+    min-height: 46px;
+    background: rgba(255, 255, 255, 0.78) !important;
+  }
+  .date-time-picker:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+  .flatpickr-calendar {
+    border: 1px solid rgba(148, 163, 184, 0.28) !important;
+    border-radius: 18px !important;
+    padding: 8px !important;
+    box-shadow: 0 22px 60px rgba(15, 23, 42, 0.22) !important;
+    font-family: "Nunito", sans-serif !important;
+    overflow: hidden;
+  }
+  .flatpickr-calendar.open {
+    z-index: 100001 !important;
+  }
+  .flatpickr-day {
+    border-radius: 10px !important;
+    font-weight: 700;
+  }
+  .flatpickr-day.selected,
+  .flatpickr-day.startRange,
+  .flatpickr-day.endRange {
+    background: #2563eb !important;
+    border-color: #2563eb !important;
+  }
+  .dark .date-time-picker {
+    color: #e5edf9 !important;
+    background: rgba(17, 28, 46, 0.78) !important;
+    border-color: rgba(148, 163, 184, 0.28) !important;
+  }
+  .dark .flatpickr-calendar {
+    background: #111c2e !important;
+    border-color: #34445e !important;
+    box-shadow: 0 22px 65px rgba(0, 0, 0, 0.48) !important;
+  }
+  .dark .flatpickr-calendar,
+  .dark .flatpickr-calendar .flatpickr-month,
+  .dark .flatpickr-calendar .flatpickr-weekday,
+  .dark .flatpickr-calendar .flatpickr-current-month,
+  .dark .flatpickr-calendar .flatpickr-time,
+  .dark .flatpickr-calendar .flatpickr-time input,
+  .dark .flatpickr-calendar .flatpickr-time .flatpickr-am-pm {
+    color: #e5edf9 !important;
+    fill: #e5edf9 !important;
+  }
+  .dark .flatpickr-day {
+    color: #dbeafe !important;
+  }
+  .dark .flatpickr-day:hover {
+    background: #263b5d !important;
+    border-color: #263b5d !important;
+  }
+  .dark .flatpickr-day.flatpickr-disabled,
+  .dark .flatpickr-day.prevMonthDay,
+  .dark .flatpickr-day.nextMonthDay {
+    color: #64748b !important;
+  }
+  .dark .flatpickr-months .flatpickr-prev-month,
+  .dark .flatpickr-months .flatpickr-next-month {
+    color: #cbd5e1 !important;
+    fill: #cbd5e1 !important;
+  }
+  .dark .flatpickr-time {
+    border-top-color: #34445e !important;
+  }
+  .dark .flatpickr-time input:hover,
+  .dark .flatpickr-time .flatpickr-am-pm:hover {
+    background: #263b5d !important;
+  }
+  .booking-limit-note {
+    display: flex;
+    gap: 9px;
+    align-items: flex-start;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 13px;
+    background: rgba(59, 130, 246, 0.07);
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.6;
+  }
+  .booking-limit-note i {
+    color: var(--blue);
+    margin-top: 2px;
+  }
+</style>
+
 <div class="welcome">
   <div>
     <div class="eyebrow">Reserve your space</div>
@@ -26,14 +125,39 @@
       </div>
     </div>
     <form method="post" id="bookingForm">
+      <div class="booking-limit-note">
+        <i class="fa-solid fa-circle-info"></i
+        ><span
+          >Bookings can start within the next <strong>30 days</strong>. Each
+          booking can last up to <strong>48 hours</strong> from its selected
+          start time.</span
+        >
+      </div>
       <div class="form-grid">
         <div class="field">
-          <label>Start date & time</label
-          ><input type="datetime-local" name="start_at" id="startAt" required />
+          <label for="startAt">Start date &amp; time</label>
+          <input
+            type="text"
+            name="start_at"
+            id="startAt"
+            class="date-time-picker"
+            placeholder="Select start date and time"
+            autocomplete="off"
+            required
+          />
         </div>
         <div class="field">
-          <label>End date & time</label
-          ><input type="datetime-local" name="end_at" id="endAt" required />
+          <label for="endAt">End date &amp; time</label>
+          <input
+            type="text"
+            name="end_at"
+            id="endAt"
+            class="date-time-picker"
+            placeholder="Select end date and time"
+            autocomplete="off"
+            required
+            disabled
+          />
         </div>
         <div class="field full">
           <label>Choose a slot</label
@@ -147,4 +271,118 @@
   </div>
   {% endfor %}
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+  (function () {
+    const startInput = document.getElementById("startAt");
+    const endInput = document.getElementById("endAt");
+    const bookingForm = document.getElementById("bookingForm");
+
+    if (
+      !startInput ||
+      !endInput ||
+      !bookingForm ||
+      typeof flatpickr === "undefined"
+    ) {
+      return;
+    }
+
+    const maxStart = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    const maxDuration = 48 * 60 * 60 * 1000;
+    let endPicker = null;
+
+    // Flatpickr creates a separate visible altInput. Both inputs must be
+    // enabled/disabled together; changing only the original input is insufficient.
+    function setEndPickerEnabled(enabled) {
+      endInput.disabled = !enabled;
+
+      if (endPicker) {
+        endPicker._input.disabled = !enabled;
+        if (endPicker.altInput) {
+          endPicker.altInput.disabled = !enabled;
+        }
+      }
+    }
+
+    const startPicker = flatpickr(startInput, {
+      enableTime: true,
+      time_24hr: false,
+      minuteIncrement: 5,
+      dateFormat: "Y-m-d\\TH:i",
+      altInput: true,
+      altFormat: "D, d M Y · h:i K",
+      minDate: new Date(),
+      maxDate: maxStart,
+      disableMobile: true,
+      allowInput: false,
+      onChange: function (dates) {
+        const start = dates[0];
+
+        if (!start) {
+          if (endPicker) {
+            endPicker.clear();
+            endPicker.set("minDate", null);
+            endPicker.set("maxDate", null);
+          }
+
+          setEndPickerEnabled(false);
+          return;
+        }
+
+        const limit = new Date(start.getTime() + maxDuration);
+
+        setEndPickerEnabled(true);
+
+        endPicker.set("minDate", start);
+        endPicker.set("maxDate", limit);
+
+        const chosenEnd = endPicker.selectedDates[0];
+
+        if (chosenEnd && (chosenEnd <= start || chosenEnd > limit)) {
+          endPicker.clear();
+        }
+      },
+    });
+
+    endPicker = flatpickr(endInput, {
+      enableTime: true,
+      time_24hr: false,
+      minuteIncrement: 5,
+      dateFormat: "Y-m-d\\TH:i",
+      altInput: true,
+      altFormat: "D, d M Y · h:i K",
+      disableMobile: true,
+      allowInput: false,
+    });
+
+    // Start with end date/time disabled until a valid start is selected.
+    setEndPickerEnabled(false);
+
+    bookingForm.addEventListener("submit", function (event) {
+      const start = startPicker.selectedDates[0];
+      const end = endPicker.selectedDates[0];
+
+      if (!start || !end) {
+        event.preventDefault();
+        alert("Please select both the start and end date/time.");
+        return;
+      }
+
+      if (start < new Date() || start > maxStart) {
+        event.preventDefault();
+        alert("The booking start time must be within the next 30 days.");
+        return;
+      }
+
+      if (end <= start || end.getTime() - start.getTime() > maxDuration) {
+        event.preventDefault();
+        alert(
+          "The end time must be after the start time and no more than 48 hours later."
+        );
+      }
+    });
+  })();
+</script>
+
 {% endblock %}
