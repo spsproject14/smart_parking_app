@@ -1,180 +1,433 @@
-{% extends 'base.html' %} {% block page_content %}
+
+{% extends 'base.html' %}
+{% block page_content %}
+
 <div class="welcome">
   <div>
     <div class="eyebrow">Your parking workspace</div>
-    <h1 class="page-title">Welcome back, {{user.name.split()[0]}}</h1>
+    <h1 class="page-title">Welcome back, {{ user.name.split()[0] }}</h1>
     <p class="subtitle">
       Your live parking status and upcoming reservations at a glance.
     </p>
   </div>
-  <a class="btn btn-primary" href="{{url_for('book')}}"
-    ><i class="fa-solid fa-plus"></i> Book a slot</a
-  >
+  <a class="btn btn-primary" href="{{ url_for('book') }}">
+    <i class="fa-solid fa-plus"></i> Book a slot
+  </a>
 </div>
+
+<!-- Dashboard Statistics -->
 <div class="grid stats">
   <div class="stat">
-    <div class="stat-icon"><i class="fa-solid fa-calendar-check"></i></div>
+    <div class="stat-icon">
+      <i class="fa-solid fa-calendar-check"></i>
+    </div>
     <div>
       <div class="stat-label">Current bookings</div>
-      <div class="stat-value">{{current_bookings|length}}</div>
+      <div class="stat-value">{{ current_bookings|length }}</div>
     </div>
   </div>
-  <div class="stat">
-    <div class="stat-icon"><i class="fa-solid fa-wallet"></i></div>
+
+  <a class="stat wallet-stat" href="{{ url_for('settings') }}"
+     aria-label="View wallet settings and balance">
+    <div class="stat-icon">
+      <i class="fa-solid fa-wallet"></i>
+    </div>
     <div>
       <div class="stat-label">Wallet balance</div>
-      <div class="stat-value">₹{{'%.2f'|format(wallet_balance)}}</div>
+      <div class="stat-value">₹{{ '%.2f'|format(wallet_balance) }}</div>
+      <div class="wallet-hint">
+        View wallet <i class="fa-solid fa-arrow-right"></i>
+      </div>
     </div>
-  </div>
+  </a>
+
   <div class="stat">
-    <div class="stat-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+    <div class="stat-icon">
+      <i class="fa-solid fa-clock-rotate-left"></i>
+    </div>
     <div>
       <div class="stat-label">Past bookings</div>
       <div class="stat-value">
-        <a href="{{url_for('past_bookings_page')}}"
-          >View history <i class="fa-solid fa-arrow-right"></i
-        ></a>
+        <a href="{{ url_for('past_bookings_page') }}">
+          View history <i class="fa-solid fa-arrow-right"></i>
+        </a>
       </div>
     </div>
   </div>
+
   <div class="stat">
-    <div class="stat-icon"><i class="fa-solid fa-shield-halved"></i></div>
+    <div class="stat-icon">
+      <i class="fa-solid fa-shield-halved"></i>
+    </div>
     <div>
       <div class="stat-label">Account status</div>
       <div class="stat-value" style="font-size: 18px">
-        {{'Blacklisted' if user.blacklisted else 'Active'}}
+        {{ 'Blacklisted' if user.blacklisted else 'Active' }}
       </div>
     </div>
   </div>
 </div>
+
+<!-- Blacklisted Account Warning -->
 {% if user.blacklisted %}
 <div class="flash error">
-  <i class="fa-solid fa-ban"></i> Your account is blacklisted after repeated
-  overstay penalties. New bookings are disabled until an administrator restores
-  access.
+  <i class="fa-solid fa-ban"></i>
+  Your account is blacklisted after repeated overstay penalties.
+  New bookings are disabled until an administrator restores access.
 </div>
 {% endif %}
+
+<!-- Live Parking Slots -->
 <div class="section-head">
   <div>
     <h3>Live parking slots</h3>
     <p>Availability is based on recent sensor reports.</p>
   </div>
-  <span class="pill"><i class="fa-solid fa-wifi"></i> Live status</span>
+  <span class="pill">
+    <i class="fa-solid fa-wifi"></i> Live status
+  </span>
 </div>
+
 <div class="grid slots-grid">
   {% for s in slots %}
   <div class="slot-card">
     <div class="slot-top">
-      <div class="slot-id">{{s._id}}</div>
-      <div class="slot-icon"><i class="fa-solid fa-car-side"></i></div>
+      <div class="slot-id">{{ s._id }}</div>
+      <div class="slot-icon">
+        <i class="fa-solid fa-car-side"></i>
+      </div>
     </div>
-    <span
-      class="status {{'status-occupied' if s.occupied else ('status-available' if s.sensor_known else 'status-unknown')}}"
-      >{{'Occupied' if s.occupied else ('Available' if s.sensor_known else
-      'Unknown')}}</span
-    >
+
+    <span class="status
+      {{ 'status-occupied' if s.occupied else
+         ('status-available' if s.sensor_known else 'status-unknown') }}">
+      {{ 'Occupied' if s.occupied else
+         ('Available' if s.sensor_known else 'Unknown') }}
+    </span>
+
     <p class="help" style="margin: 12px 0 0">
-      {{'Sensor updated' if s.sensor_updated_at else 'Waiting for sensor data'}}
+      {{ 'Sensor updated' if s.sensor_updated_at else 'Waiting for sensor data' }}
     </p>
   </div>
   {% endfor %}
 </div>
+
+<!-- Current Bookings -->
 <div class="section-head">
   <div>
     <h3>Current bookings</h3>
     <p>Manage upcoming and active parking sessions.</p>
   </div>
 </div>
+
 {% if current_bookings %}
 <div class="booking-list">
   {% for b in current_bookings %}
-  <div
-    class="booking-row"
-    data-booking-end="{{b.end_at.isoformat() if b.end_at else ''}}"
-  >
+  <div class="booking-row"
+       data-booking-end="{{ b.end_at.isoformat() if b.end_at else '' }}">
+
     <div class="booking-slot">
-      <div class="slot-badge">{{b.slot_id}}</div>
+      <div class="slot-badge">{{ b.slot_id }}</div>
       <div>
-        <strong
-          >{{'Active parking' if b.status=='ACTIVE' else 'Reserved
-          parking'}}</strong
-        ><small>{{b.status}}</small>
+        <strong>
+          {{ 'Active parking' if b.status == 'ACTIVE' else 'Reserved parking' }}
+        </strong>
+        <small>{{ b.status }}</small>
+
         <div style="margin-top: 7px">
-          <span
-            class="status {{'status-active' if b.status=='ACTIVE' else 'status-booked'}}"
-            >{{b.status}}</span
-          >
+          <span class="status
+            {{ 'status-active' if b.status == 'ACTIVE' else 'status-booked' }}">
+            {{ b.status }}
+          </span>
         </div>
       </div>
     </div>
+
     <div class="booking-time">
       <div>
         <div class="time-label">Start time</div>
-        <div
-          class="time-value local-time"
-          data-time="{{b.start_at.isoformat()}}"
-        >
-          {{b.start_at.strftime('%d %b %Y, %I:%M %p') if b.start_at else '—'}}
+        <div class="time-value local-time"
+             data-time="{{ b.start_at.isoformat() }}">
+          {{ b.start_at.strftime('%d %b %Y, %I:%M %p') if b.start_at else '—' }}
         </div>
       </div>
+
       <div>
         <div class="time-label">End time</div>
-        <div class="time-value local-time" data-time="{{b.end_at.isoformat()}}">
-          {{b.end_at.strftime('%d %b %Y, %I:%M %p') if b.end_at else '—'}}
+        <div class="time-value local-time"
+             data-time="{{ b.end_at.isoformat() }}">
+          {{ b.end_at.strftime('%d %b %Y, %I:%M %p') if b.end_at else '—' }}
         </div>
       </div>
+
       <div class="full">
         <div class="time-label">Time remaining</div>
-        <div
-          class="countdown"
-          data-countdown="{{b.end_at.isoformat() if b.end_at else ''}}"
-        >
+        <div class="countdown"
+             data-countdown="{{ b.end_at.isoformat() if b.end_at else '' }}">
           Calculating…
         </div>
+
         <div class="timer-note reminder" style="display: none">
-          <i class="fa-regular fa-bell"></i> Your booking ends in 10 minutes or
-          less.
+          <i class="fa-regular fa-bell"></i>
+          Your booking ends in 10 minutes or less.
         </div>
       </div>
     </div>
+
     <div class="booking-actions">
       {% if b.status == 'BOOKED' %}
-      <form method="post" action="{{url_for('web_entry',booking_id=b._id)}}">
+      <form method="post"
+            action="{{ url_for('web_entry', booking_id=b._id) }}">
         <button class="btn btn-primary btn-sm">
           <i class="fa-solid fa-door-open"></i> Open gate
         </button>
       </form>
-      {% endif %}{% if b.status == 'ACTIVE' %}
-      <form
-        method="post"
-        action="{{url_for('web_exit',booking_id=b._id)}}"
-        onsubmit="
-          return confirm(
-            'Request the exit gate to open? The session closes after the sensor confirms vacancy.',
-          );
-        "
-      >
+      {% endif %}
+
+      {% if b.status == 'ACTIVE' %}
+      <form method="post"
+            action="{{ url_for('web_exit', booking_id=b._id) }}"
+            onsubmit="return confirm('Request the exit gate to open? The session closes after the sensor confirms vacancy.');">
         <button class="btn btn-danger btn-sm">
           <i class="fa-solid fa-right-from-bracket"></i> Exit parking
         </button>
       </form>
-      {% endif %}<button
-        class="btn btn-outline btn-sm"
-        onclick="showExtend('{{b._id}}','{{b.end_at.isoformat()}}')"
-      >
+      {% endif %}
+
+      <button class="btn btn-outline btn-sm"
+              onclick="showExtend('{{ b._id }}','{{ b.end_at.isoformat() }}')">
         <i class="fa-regular fa-clock"></i> Extend
       </button>
     </div>
   </div>
   {% endfor %}
 </div>
+
 {% else %}
 <div class="card empty">
-  <i class="fa-regular fa-calendar-check"></i
-  ><strong>No current bookings</strong>
+  <i class="fa-regular fa-calendar-check"></i>
+  <strong>No current bookings</strong>
   <p>Choose a time and reserve your parking space.</p>
-  <a class="btn btn-primary" href="{{url_for('book')}}"
-    ><i class="fa-solid fa-plus"></i> Book a slot</a
-  >
+  <a class="btn btn-primary" href="{{ url_for('book') }}">
+    <i class="fa-solid fa-plus"></i> Book a slot
+  </a>
 </div>
-{% endif %} {% endblock %}
+{% endif %}
+
+
+<!-- My Availability Requests / Waitlist -->
+<div class="section-head waitlist-section-head">
+  <div>
+    <h3>My Availability Requests</h3>
+    <p>Track parking slots you have requested notifications for.</p>
+  </div>
+  <span class="pill">
+    <i class="fa-regular fa-bell"></i> Waitlist
+  </span>
+</div>
+
+{% if my_waitlist %}
+<div class="booking-list">
+
+  {% for w in my_waitlist %}
+  <div class="booking-row waitlist-row">
+
+    <!-- Slot and notification status -->
+    <div class="booking-slot">
+      <div class="slot-badge">{{ w.slot_id }}</div>
+
+      <div>
+        <strong>Slot {{ w.slot_id }}</strong>
+
+        <small>Availability notification request</small>
+
+        <div class="waitlist-badges">
+          {% if w.notified %}
+          <span class="status status-available">
+            <i class="fa-solid fa-check-circle"></i>
+            Notification Sent
+          </span>
+          {% else %}
+          <span class="status status-booked">
+            <i class="fa-regular fa-clock"></i>
+            Pending Notification
+          </span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Requested time -->
+    <div class="booking-time">
+      <div>
+        <div class="time-label">Requested start</div>
+        <div class="time-value local-time"
+             data-time="{{ w.start_at.isoformat() }}">
+          {{ w.start_at.strftime('%d %b %Y, %I:%M %p') if w.start_at else '—' }}
+        </div>
+      </div>
+
+      <div>
+        <div class="time-label">Requested end</div>
+        <div class="time-value local-time"
+             data-time="{{ w.end_at.isoformat() }}">
+          {{ w.end_at.strftime('%d %b %Y, %I:%M %p') if w.end_at else '—' }}
+        </div>
+      </div>
+
+      <div class="full">
+        <div class="time-label">Current slot status</div>
+
+        {% if w.live_status == 'Sensor Offline / Unknown' %}
+        <span class="status status-unknown">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          Sensor Offline / Unknown
+        </span>
+
+        {% elif w.live_status == 'Occupied – Waiting' %}
+        <span class="status status-occupied">
+          <i class="fa-solid fa-car"></i>
+          Occupied – Waiting
+        </span>
+
+        {% elif w.live_status == 'Vacant Now – Reserved for Selected Time' %}
+        <span class="status status-booked">
+          <i class="fa-solid fa-calendar-check"></i>
+          Vacant Now – Reserved for Selected Time
+        </span>
+
+        {% elif w.live_status == 'Slot Freed – Available to Check' %}
+        <span class="status status-available">
+          <i class="fa-solid fa-circle-check"></i>
+          Slot Freed – Available to Check
+        </span>
+
+        {% else %}
+        <span class="status status-unknown">
+          {{ w.live_status or 'Status unavailable' }}
+        </span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Waitlist action -->
+    <div class="booking-actions">
+
+      {% if w.live_status == 'Slot Freed – Available to Check' %}
+      <a class="btn btn-primary btn-sm"
+         href="{{ url_for('book') }}">
+        <i class="fa-solid fa-calendar-plus"></i>
+        Check & Book
+      </a>
+
+      {% elif w.notified %}
+      <a class="btn btn-outline btn-sm"
+         href="{{ url_for('book') }}">
+        <i class="fa-solid fa-arrow-right"></i>
+        Book a slot
+      </a>
+
+      {% else %}
+      <span class="waitlist-waiting">
+        <i class="fa-solid fa-hourglass-half"></i>
+        Waiting for availability
+      </span>
+      {% endif %}
+
+    </div>
+
+  </div>
+  {% endfor %}
+
+</div>
+
+{% else %}
+<div class="card empty waitlist-empty">
+  <i class="fa-regular fa-bell"></i>
+  <strong>No availability requests</strong>
+  <p>
+    When a parking slot is occupied, you can join its notification list
+    and track its availability here.
+  </p>
+  <a class="btn btn-outline" href="{{ url_for('book') }}">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    Find a parking slot
+  </a>
+</div>
+{% endif %}
+
+
+<!-- Dashboard Styles -->
+<style>
+  .wallet-stat {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  }
+
+  .wallet-stat:hover {
+    transform: translateY(-3px);
+    border-color: rgba(37, 99, 235, .35);
+    box-shadow: 0 16px 38px rgba(37, 99, 235, .13);
+  }
+
+  .wallet-stat:focus-visible {
+    outline: 3px solid rgba(59, 130, 246, .55);
+    outline-offset: 3px;
+  }
+
+  .wallet-stat .wallet-hint {
+    margin-top: 5px;
+    color: var(--blue);
+    font-size: 11px;
+    font-weight: 800;
+    opacity: .85;
+  }
+
+  .waitlist-section-head {
+    margin-top: 35px;
+  }
+
+  .waitlist-row {
+    align-items: center;
+  }
+
+  .waitlist-badges {
+    margin-top: 8px;
+  }
+
+  .waitlist-badges .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .waitlist-waiting {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .waitlist-empty {
+    margin-bottom: 25px;
+  }
+
+  @media (max-width: 768px) {
+    .waitlist-row {
+      align-items: flex-start;
+    }
+
+    .waitlist-row .booking-actions {
+      width: 100%;
+    }
+  }
+</style>
+
+{% endblock %}
