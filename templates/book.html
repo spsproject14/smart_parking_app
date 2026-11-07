@@ -14,18 +14,41 @@
     cursor: not-allowed;
     opacity: 0.55;
   }
+  /* Keep all seven weekday columns visible; the old overflow:hidden clipped the edge. */
   .flatpickr-calendar {
+    box-sizing: border-box !important;
+    width: 323px !important;
+    max-width: calc(100vw - 16px) !important;
     border: 1px solid rgba(148, 163, 184, 0.28) !important;
     border-radius: 18px !important;
     padding: 8px !important;
     box-shadow: 0 22px 60px rgba(15, 23, 42, 0.22) !important;
     font-family: "Nunito", sans-serif !important;
-    overflow: hidden;
+    overflow: visible !important;
   }
   .flatpickr-calendar.open {
     z-index: 100001 !important;
   }
-  .flatpickr-day {
+  /* Override Flatpickr's fixed 307px day container so it fits the popup. */
+  .flatpickr-calendar .flatpickr-innerContainer,
+  .flatpickr-calendar .flatpickr-rContainer,
+  .flatpickr-calendar .flatpickr-days {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .flatpickr-calendar .dayContainer {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    justify-content: space-around !important;
+  }
+  .flatpickr-calendar .flatpickr-day {
+    flex: 0 0 14.285714% !important;
+    max-width: 14.285714% !important;
+    box-sizing: border-box !important;
     border-radius: 10px !important;
     font-weight: 700;
   }
@@ -54,6 +77,24 @@
   .dark .flatpickr-calendar .flatpickr-time .flatpickr-am-pm {
     color: #e5edf9 !important;
     fill: #e5edf9 !important;
+  }
+  /* Flatpickr renders the year as an input; explicitly style it for dark mode. */
+  .dark .flatpickr-calendar .flatpickr-current-month input.cur-year,
+  .dark .flatpickr-calendar .flatpickr-current-month .numInputWrapper,
+  .dark .flatpickr-calendar .flatpickr-current-month .flatpickr-monthDropdown-months {
+    color: #f8fafc !important;
+    background: transparent !important;
+    -webkit-text-fill-color: #f8fafc !important;
+    opacity: 1 !important;
+  }
+  .dark .flatpickr-calendar .flatpickr-current-month input.cur-year {
+    font-weight: 700 !important;
+  }
+  .dark .flatpickr-calendar .flatpickr-current-month .numInputWrapper span.arrowUp:after {
+    border-bottom-color: #cbd5e1 !important;
+  }
+  .dark .flatpickr-calendar .flatpickr-current-month .numInputWrapper span.arrowDown:after {
+    border-top-color: #cbd5e1 !important;
   }
   .dark .flatpickr-day {
     color: #dbeafe !important;
