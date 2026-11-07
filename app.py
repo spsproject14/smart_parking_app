@@ -76,15 +76,117 @@ def now_utc():
     return datetime.now(timezone.utc)
 
 def cleanup_expired_waitlist():
-    """Delete waitlist requests whose requested parking period has ended."""
+    """Mark ended pending waitlist requests as EXPIRED; never delete them."""
     if waitlist is None:
         return 0
 
-    result = waitlist.delete_many({
-        "end_at": {"$lte": now_utc()}
-    })
+    now = now_utc()
+    result = waitlist.update_many(
+        {
+            "end_at": {"$lte": now},
+            "status": {"$nin": ["EXPIRED", "CANCELLED", "CANCELED"]},
+        },
+        {
+            "$set": {
+                "status": "EXPIRED",
+                "expired_at": now,
+            }
+        },
+    )
+    return result.modified_count
 
-    return result.deleted_count
+
+def send_expired_waitlist_emails():
+    """Email users about expired requests; failed deliveries remain retryable."""
+    if waitlist is None or users is None:
+        return {"sent": 0, "failed": 0}
+
+    now = now_utc()
+    sent_count = 0
+    failed_count = 0
+
+    expired_requests = waitlist.find(
+        {
+            "status": "EXPIRED",
+            "$or": [
+                {"expiry_email_sent_at": {"$exists": False}},
+                {"expiry_email_sent_at": None},
+            ],
+        }
+    ).limit(200)
+
+    for item in expired_requests:
+        user = None
+        try:
+            user = users.find_one({"_id": ObjectId(item["user_id"])})
+        except Exception:
+            user = None
+
+        recipient = (user or {}).get("email") or item.get("email")
+        if not recipient:
+            failed_count += 1
+            app.logger.warning(
+                "Expiry email skipped: no recipient for waitlist request %s",
+                item.get("_id"),
+            )
+            continue
+
+        start_at = item.get("start_at")
+        end_at = item.get("end_at")
+        start_text = (
+            start_at.astimezone(LOCAL_TZ).strftime("%d %b %Y, %I:%M %p IST")
+            if start_at else "the selected time"
+        )
+        end_text = (
+            end_at.astimezone(LOCAL_TZ).strftime("%d %b %Y, %I:%M %p IST")
+            if end_at else "the requested end time"
+        )
+        name = (user or {}).get("name") or "ParkEase user"
+        slot_id = item.get("slot_id", "your selected slot")
+
+        delivered = send_email(
+            recipient,
+            f"Your ParkEase request for slot {slot_id} has expired",
+            (
+                f"Hello {name},\n\n"
+                f"Unfortunately, the slot you requested ({slot_id}) "
+                f"could not be assigned to you for the selected period "
+                f"from {start_text} to {end_text}.\n\n"
+                "Your availability request has now expired. "
+                "No parking reservation was created from this request. "
+                "If you still need parking, please open ParkEase and submit "
+                "a new request for a suitable time slot.\n\n"
+                "Thank you for using ParkEase."
+            ),
+        )
+
+        if delivered:
+            result = waitlist.update_one(
+                {
+                    "_id": item["_id"],
+                    "status": "EXPIRED",
+                    "$or": [
+                        {"expiry_email_sent_at": {"$exists": False}},
+                        {"expiry_email_sent_at": None},
+                    ],
+                },
+                {
+                    "$set": {
+                        "expiry_email_sent_at": now,
+                        "expiry_email_status": "SENT",
+                    }
+                },
+            )
+            if result.modified_count:
+                sent_count += 1
+        else:
+            failed_count += 1
+            waitlist.update_one(
+                {"_id": item["_id"], "status": "EXPIRED"},
+                {"$set": {"expiry_email_status": "FAILED"}},
+            )
+
+    return {"sent": sent_count, "failed": failed_count}
 
 
 def iso(dt):
@@ -287,6 +389,7 @@ def active_booking_for_slot(slot_id, start, end):
 
 def notify_waitlist_if_available(slot_id):
     cleanup_expired_waitlist()
+    send_expired_waitlist_emails()
 
     slot = slots.find_one({"_id": slot_id})
 
@@ -419,12 +522,15 @@ def lazy_setup():
             ensure_slots()
 
             if not app.config.get("WAITLIST_TTL_INDEX_READY"):
-                waitlist.create_index(
-                    "end_at",
-                    expireAfterSeconds=0,
-                    name="waitlist_end_at_ttl"
-                )
-                app.config["WAITLIST_TTL_INDEX_READY"] = True
+                # Older deployments created a MongoDB TTL index that physically
+                # deleted expired requests. Drop it so requests remain visible.
+                try:
+                    index_info = waitlist.index_information()
+                    if "waitlist_end_at_ttl" in index_info:
+                        waitlist.drop_index("waitlist_end_at_ttl")
+                    app.config["WAITLIST_TTL_INDEX_READY"] = True
+                except Exception:
+                    app.logger.exception("Could not remove legacy waitlist TTL index")
 
         except Exception:
             app.logger.exception("Database initialization error")
@@ -605,8 +711,9 @@ def dashboard():
 
     reconcile_overstay_charges()
 
-    # Remove expired waitlist requests before displaying them.
+    # Preserve expired requests and notify users instead of silently removing them.
     cleanup_expired_waitlist()
+    send_expired_waitlist_emails()
 
     user = current_user()
 
@@ -625,16 +732,22 @@ def dashboard():
     # Live parking slots
     slot_docs = list(slots.find())
 
-    # User's active waitlist requests
+    # Show recent requests, including EXPIRED ones, so users retain their history.
     my_waitlist = list(
         waitlist.find({
             "user_id": str(user["_id"]),
-            "end_at": {"$gt": now_utc()}
         }).sort("created_at", -1).limit(50)
     )
 
-    # Calculate live status for each waitlist request
+    # Calculate live status only for requests that have not expired.
     for item in my_waitlist:
+        if item.get("status") == "EXPIRED" or (
+            item.get("end_at") and item["end_at"] <= now_utc()
+        ):
+            item["status"] = "EXPIRED"
+            item["live_status"] = "Request Expired"
+            item["notification_status"] = "Expired"
+            continue
 
         slot = slots.find_one({
             "_id": item["slot_id"]
@@ -2151,8 +2264,9 @@ def cron_maintenance():
 
     reconcile_overstay_charges()
 
-    # Delete expired waitlist requests.
-    expired_waitlist_deleted = cleanup_expired_waitlist()
+    # Preserve expired requests and send an expiry email (retrying failures).
+    expired_waitlist_marked = cleanup_expired_waitlist()
+    expiry_email_results = send_expired_waitlist_emails()
 
     now = now_utc()
 
@@ -2210,7 +2324,9 @@ def cron_maintenance():
     return jsonify(
         ok=True,
         reminders_sent=reminders_sent,
-        expired_waitlist_deleted=expired_waitlist_deleted,
+        expired_waitlist_marked=expired_waitlist_marked,
+        expiry_emails_sent=expiry_email_results["sent"],
+        expiry_emails_failed=expiry_email_results["failed"],
         checked_at=iso(now)
     )
 
