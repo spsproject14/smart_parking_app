@@ -961,6 +961,14 @@
     </style>
   </head>
   <body>
+    <script>
+      // Apply the dashboard's saved theme before rendering the authentication page.
+      try {
+        if (localStorage.getItem("parkwise-theme") === "dark") {
+          document.body.classList.add("dark");
+        }
+      } catch (e) {}
+    </script>
     <div class="auth-wrap">
       <section class="auth-visual">
         <div class="brand" style="color: #fff; padding: 0">
@@ -987,6 +995,16 @@
         </div>
       </section>
       <section class="auth-panel">
+        <button
+          class="auth-theme-toggle"
+          type="button"
+          onclick="toggleTheme()"
+          title="Toggle light / dark mode"
+          aria-label="Toggle light / dark mode"
+        >
+          <i class="fa-solid fa-circle-half-stroke"></i>
+          <span>Appearance</span>
+        </button>
         <div class="auth-form">
           <div class="brand">
             <span class="brand-mark"
@@ -1047,6 +1065,95 @@
       .dark .modal-close {
         background: #26364f;
         color: #e5edf9;
+      }
+
+      /* Authentication pages use the same saved theme as the dashboard. */
+      .auth-wrap {
+        background: var(--bg);
+        transition: background 0.2s ease, color 0.2s ease;
+      }
+
+      .auth-panel {
+        position: relative;
+      }
+
+      .auth-form {
+        background: var(--white);
+        color: var(--ink);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        padding: 34px 30px;
+        box-shadow: var(--shadow);
+        transition: background 0.2s ease, border-color 0.2s ease;
+      }
+
+      .auth-form h2 {
+        color: var(--ink);
+      }
+
+      .auth-theme-toggle {
+        position: absolute;
+        top: 20px;
+        right: 22px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 12px;
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        background: var(--white);
+        color: var(--ink);
+        font-size: 12px;
+        font-weight: 800;
+        cursor: pointer;
+        box-shadow: var(--shadow);
+      }
+
+      .auth-theme-toggle:hover {
+        border-color: var(--blue);
+        color: var(--blue);
+      }
+
+      .dark {
+        color-scheme: dark;
+      }
+
+      .dark .auth-wrap {
+        background: var(--bg);
+      }
+
+      .dark .auth-form {
+        background: #111c2e;
+        border-color: #26364f;
+        color: #e5edf9;
+      }
+
+      .dark .auth-form h2,
+      .dark .auth-form .brand {
+        color: #e5edf9;
+      }
+
+      .dark .auth-theme-toggle {
+        background: #111c2e;
+        border-color: #34445e;
+        color: #e5edf9;
+      }
+
+      .dark .auth-theme-toggle:hover {
+        border-color: #60a5fa;
+        color: #93c5fd;
+      }
+
+      @media (max-width: 580px) {
+        .auth-form {
+          padding: 28px 20px;
+        }
+
+        .auth-theme-toggle {
+          top: 12px;
+          right: 12px;
+          padding: 8px 10px;
+        }
       }
     </style>
     <script>
