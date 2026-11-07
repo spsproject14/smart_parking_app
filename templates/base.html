@@ -1526,17 +1526,25 @@
           ><i class="fa-solid fa-clock-rotate-left"></i> Past bookings</a
         >
         <a
-          class="nav-link {% if page=='report_issue' %}active{% endif %}"
-          href="{{url_for('report_issue')}}"
-          ><i class="fa-solid fa-flag"></i> Report an issue</a
+          class="nav-link {% if page=='wallet' %}active{% endif %}"
+          href="{{url_for('wallet_page')}}"
+          ><i class="fa-solid fa-wallet"></i> Wallet</a
         >
         <a
-          class="nav-link {% if page=='settings' %}active{% endif %}"
+          class="nav-link {% if page=='profile' %}active{% endif %}"
           href="{{url_for('settings')}}"
-          ><i class="fa-solid fa-sliders"></i> Settings</a
+          ><i class="fa-solid fa-user-gear"></i> Profile</a
         >
         {% endif %}
         <div class="sidebar-bottom">
+          {% if role != 'admin' %}
+          <a
+            class="nav-link {% if page=='report_issue' %}active{% endif %}"
+            href="{{url_for('report_issue')}}"
+            style="margin-bottom: 12px"
+            ><i class="fa-solid fa-flag"></i> Report an issue</a
+          >
+          {% endif %}
           <div class="profile-mini">
             <div class="avatar">
               {{ (user.name if user and user.name is defined else 'A')[0]|upper
@@ -1584,7 +1592,7 @@
               elif role=='admin' and page=='admin_bookings' %}Bookings{% elif
               role=='admin' and page=='admin_reports' %}Reports{% elif
               role=='admin' and page=='admin_transactions' %}Transactions{% elif
-              page=='settings' %}Settings{% elif page=='book' %}Book a parking
+              page=='profile' %}Profile{% elif page=='wallet' %}Wallet{% elif page=='book' %}Book a parking
               slot{% elif page=='past_bookings' %}Past bookings{% elif
               page=='report_issue' %}Report an issue{% else %}My dashboard{%
               endif %}
@@ -1695,20 +1703,20 @@
           ><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i
         ></a>
         <a
-          class="{% if page=='report_issue' %}active{% endif %}"
-          {{ 'aria-current="page"'|safe if page=='report_issue' else '' }}
-          href="{{url_for('report_issue')}}"
-          title="Report an issue"
-          aria-label="Report an issue"
-          ><i class="fa-solid fa-flag" aria-hidden="true"></i
+          class="{% if page=='wallet' %}active{% endif %}"
+          {{ 'aria-current="page"'|safe if page=='wallet' else '' }}
+          href="{{url_for('wallet_page')}}"
+          title="Wallet"
+          aria-label="Wallet"
+          ><i class="fa-solid fa-wallet" aria-hidden="true"></i
         ></a>
         <a
-          class="{% if page=='settings' %}active{% endif %}"
-          {{ 'aria-current="page"'|safe if page=='settings' else '' }}
+          class="{% if page=='profile' %}active{% endif %}"
+          {{ 'aria-current="page"'|safe if page=='profile' else '' }}
           href="{{url_for('settings')}}"
-          title="Settings"
-          aria-label="Settings"
-          ><i class="fa-solid fa-sliders" aria-hidden="true"></i
+          title="Profile"
+          aria-label="Profile"
+          ><i class="fa-solid fa-user-gear" aria-hidden="true"></i
         ></a>
         {% endif %}
       </nav>
