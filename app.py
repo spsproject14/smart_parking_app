@@ -75,6 +75,17 @@ sensor_events = db["sensor_events"] if db is not None else None
 def now_utc():
     return datetime.now(timezone.utc)
 
+def cleanup_expired_waitlist():
+    """Delete waitlist requests whose requested parking period has ended."""
+    if waitlist is None:
+        return 0
+
+    result = waitlist.delete_many({
+        "end_at": {"$lte": now_utc()}
+    })
+
+    return result.deleted_count
+
 
 def iso(dt):
     return dt.isoformat() if dt else None
@@ -275,33 +286,60 @@ def active_booking_for_slot(slot_id, start, end):
 
 
 def notify_waitlist_if_available(slot_id):
+    cleanup_expired_waitlist()
+
     slot = slots.find_one({"_id": slot_id})
+
     if not slot_is_reliably_vacant(slot):
         return
+
     now = now_utc()
+
     waiting = list(
-        waitlist.find({"slot_id": slot_id, "notified": {"$ne": True}}).limit(50)
+        waitlist.find({
+            "slot_id": slot_id,
+            "notified": {"$ne": True},
+            "end_at": {"$gt": now}
+        }).limit(50)
     )
+
     for w in waiting:
-        user = users.find_one({"_id": ObjectId(w["user_id"])})
-        if user:
-            sent = send_email(
-                user.get("email"),
-                f"Parking slot {slot_id} may be available",
-                f"Hello {user.get('name','')},\n\nSlot {slot_id} has become vacant. Please revisit the booking page and complete the normal booking process. Availability is not reserved by this email and may change.\n\nSmart Parking",
+        try:
+            user = users.find_one({
+                "_id": ObjectId(w["user_id"])
+            })
+        except Exception:
+            user = None
+
+        if not user:
+            continue
+
+        sent = send_email(
+            user.get("email"),
+            f"Parking slot {slot_id} may be available",
+            (
+                f"Hello {user.get('name', '')},\n\n"
+                f"Slot {slot_id} has become vacant. "
+                "Please revisit the booking page and complete "
+                "the normal booking process. Availability is not "
+                "reserved by this email and may change.\n\n"
+                "Smart Parking"
             )
-            if sent:
-                waitlist.update_one(
-                    {"_id": w["_id"]},
-                    {
-                        "$set": {
-                            "notified": True,
-                            "notification_status": "SENT",
-                            "notified_at": now
-                        }
+        )
+
+        if sent:
+            waitlist.update_one(
+                {"_id": w["_id"]},
+                {
+                    "$set": {
+                        "notified": True,
+                        "notification_status": "SENT",
+                        "notified_at": now
                     }
-                )
-    # Waitlist notifications never create a booking automatically.
+                }
+            )
+
+    # Waitlist notifications never create bookings automatically.
 
 
 def reconcile_overstay_charges():
@@ -379,6 +417,15 @@ def lazy_setup():
     if db is not None:
         try:
             ensure_slots()
+
+            if not app.config.get("WAITLIST_TTL_INDEX_READY"):
+                waitlist.create_index(
+                    "end_at",
+                    expireAfterSeconds=0,
+                    name="waitlist_end_at_ttl"
+                )
+                app.config["WAITLIST_TTL_INDEX_READY"] = True
+
         except Exception:
             app.logger.exception("Database initialization error")
 
@@ -555,6 +602,9 @@ def dashboard():
 
     reconcile_overstay_charges()
 
+    # Remove expired waitlist requests before displaying them.
+    cleanup_expired_waitlist()
+
     user = current_user()
 
     if not user:
@@ -572,10 +622,11 @@ def dashboard():
     # Live parking slots
     slot_docs = list(slots.find())
 
-    # User's waitlist requests
+    # User's active waitlist requests
     my_waitlist = list(
         waitlist.find({
-            "user_id": str(user["_id"])
+            "user_id": str(user["_id"]),
+            "end_at": {"$gt": now_utc()}
         }).sort("created_at", -1).limit(50)
     )
 
@@ -586,14 +637,12 @@ def dashboard():
             "_id": item["slot_id"]
         })
 
-        # Notification status
         item["notification_status"] = (
             "Notification Sent"
             if item.get("notified")
             else "Pending"
         )
 
-        # Physical slot status from sensor
         if not slot_sensor_is_fresh(slot):
             item["live_status"] = "Sensor Offline / Unknown"
 
@@ -601,7 +650,6 @@ def dashboard():
             item["live_status"] = "Occupied – Waiting"
 
         else:
-            # Check whether another booking overlaps
             conflict = active_booking_for_slot(
                 item["slot_id"],
                 item["start_at"],
@@ -627,6 +675,43 @@ def dashboard():
         wallet_balance=money(user.get("wallet_balance", 0))
     )
 
+@app.route("/waitlist/<waitlist_id>/opt-out", methods=["POST"])
+@login_required
+@db_required
+def opt_out_waitlist(waitlist_id):
+
+    if session.get("role") == "admin":
+        return redirect(url_for("admin_dashboard"))
+
+    user = current_user()
+
+    if not user:
+        session.clear()
+        return redirect(url_for("login"))
+
+    try:
+        waitlist_object_id = ObjectId(waitlist_id)
+    except Exception:
+        flash("Invalid availability request.", "error")
+        return redirect(url_for("dashboard"))
+
+    result = waitlist.delete_one({
+        "_id": waitlist_object_id,
+        "user_id": str(user["_id"])
+    })
+
+    if result.deleted_count:
+        flash(
+            "You have successfully opted out of this availability request.",
+            "success"
+        )
+    else:
+        flash(
+            "Availability request not found or already removed.",
+            "error"
+        )
+
+    return redirect(url_for("dashboard"))
 
 @app.route("/book", methods=["GET", "POST"])
 @login_required
@@ -2051,36 +2136,77 @@ def api_availability():
 @db_required
 def cron_maintenance():
     expected = os.getenv("CRON_SECRET", "")
-    supplied = request.headers.get("Authorization", "").replace("Bearer ", "", 1)
+    supplied = request.headers.get("Authorization", "").replace(
+        "Bearer ", "", 1
+    )
+
     if not expected or not secrets.compare_digest(expected, supplied):
         return jsonify(error="Unauthorized"), 401
+
     reconcile_overstay_charges()
+
+    # Delete expired waitlist requests.
+    expired_waitlist_deleted = cleanup_expired_waitlist()
+
     now = now_utc()
+
     reminder_window_start = now + timedelta(minutes=9)
     reminder_window_end = now + timedelta(minutes=11)
+
     reminders_sent = 0
-    for b in bookings.find(
-        {
-            "status": {"$in": ["BOOKED", "ACTIVE"]},
-            "end_at": {"$gte": reminder_window_start, "$lte": reminder_window_end},
-            "reminder_sent_at": {"$exists": False},
-        }
-    ):
-        user = users.find_one({"_id": ObjectId(b["user_id"])})
+
+    for b in bookings.find({
+        "status": {"$in": ["BOOKED", "ACTIVE"]},
+        "end_at": {
+            "$gte": reminder_window_start,
+            "$lte": reminder_window_end
+        },
+        "reminder_sent_at": {"$exists": False}
+    }):
+
+        try:
+            user = users.find_one({
+                "_id": ObjectId(b["user_id"])
+            })
+        except Exception:
+            user = None
+
         if user:
             ok = send_email(
                 user.get("email"),
                 f"Parking reminder: {b['slot_id']} ends in 10 minutes",
-                f"Hello {user.get('name','')},\\n\\nYour parking booking for slot {b['slot_id']} is scheduled to end at {b['end_at'].astimezone(LOCAL_TZ).strftime('%d %b %Y, %I:%M %p')} IST. Please exit on time or extend your booking if available. Overstay charges are ₹40 per hour, starting one minute after expiry.\\n\\nParkEase",
+                (
+                    f"Hello {user.get('name', '')},\n\n"
+                    f"Your parking booking for slot {b['slot_id']} "
+                    f"is scheduled to end at "
+                    f"{b['end_at'].astimezone(LOCAL_TZ).strftime('%d %b %Y, %I:%M %p')} IST. "
+                    "Please exit on time or extend your booking if available. "
+                    "Overstay charges are ₹40 per hour, starting one minute after expiry.\n\n"
+                    "ParkEase"
+                )
             )
+
             if ok:
                 bookings.update_one(
-                    {"_id": b["_id"], "reminder_sent_at": {"$exists": False}},
-                    {"$set": {"reminder_sent_at": now}},
+                    {
+                        "_id": b["_id"],
+                        "reminder_sent_at": {"$exists": False}
+                    },
+                    {
+                        "$set": {
+                            "reminder_sent_at": now
+                        }
+                    }
                 )
-                reminders_sent += 1
-    return jsonify(ok=True, reminders_sent=reminders_sent, checked_at=iso(now))
 
+                reminders_sent += 1
+
+    return jsonify(
+        ok=True,
+        reminders_sent=reminders_sent,
+        expired_waitlist_deleted=expired_waitlist_deleted,
+        checked_at=iso(now)
+    )
 
 if __name__ == "__main__":
     if not ADMIN_PASSWORD:
