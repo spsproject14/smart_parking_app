@@ -970,9 +970,12 @@ def create_report():
     title = request.form.get("title", "").strip()
     category = request.form.get("category", "Other")
     description = request.form.get("description", "").strip()
-    if not title or not description:
-        flash("Enter a title and description.", "error")
+
+    # Only title is mandatory; description is optional
+    if not title:
+        flash("Please enter a title.", "error")
         return redirect(url_for("report_issue"))
+
     reports.insert_one(
         {
             "user_id": str(user["_id"]),
@@ -986,11 +989,13 @@ def create_report():
             "created_at": now_utc(),
         }
     )
+
     send_email(
         ADMIN_EMAIL,
         f"Smart Parking report: {title}",
-        f"From: {user.get('name')} ({user.get('email')})\nCategory: {category}\nSlot: {request.form.get('slot_id')}\n\n{description}",
+        f"From: {user.get('name')} ({user.get('email')})\nCategory: {category}\nSlot: {request.form.get('slot_id')}\n\n{description or 'No additional details provided.'}",
     )
+
     flash("Report submitted to the administrator.", "success")
     return redirect(url_for("report_issue"))
 
