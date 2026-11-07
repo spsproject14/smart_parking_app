@@ -334,6 +334,15 @@
       </span>
       {% endif %}
 
+      <form method="post"
+            action="{{ url_for('opt_out_waitlist', waitlist_id=w._id) }}"
+            onsubmit="return confirm('Are you sure you want to opt out of this availability request?');">
+        <button class="btn btn-danger btn-sm" type="submit">
+          <i class="fa-solid fa-bell-slash"></i>
+          Opt out
+        </button>
+      </form>
+
     </div>
 
   </div>
