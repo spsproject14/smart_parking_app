@@ -484,15 +484,18 @@ def signup():
         mobile = request.form.get("mobile", "").strip()
         rfid = request.form.get("rfid", "").strip().upper()
         password = request.form.get("password", "")
-        if not name or not email or not mobile or not password:
+        if not name or not email or not password:
             flash("Please complete all required fields.", "error")
             return render_template("signup.html", page="signup", user=None)
         if len(password) < 8:
             flash("Password must contain at least 8 characters.", "error")
             return render_template("signup.html", page="signup", user=None)
-        if email == ADMIN_EMAIL or users.find_one(
+        duplicate_user = users.find_one(
             {"$or": [{"email": email}, {"mobile": mobile}]}
-        ):
+            if mobile else {"email": email}
+        )
+
+        if email == ADMIN_EMAIL or duplicate_user:
             flash("Email or mobile number is already registered.", "error")
             return render_template("signup.html", page="signup", user=None)
         if rfid and users.find_one({"rfid": rfid}):
@@ -501,7 +504,7 @@ def signup():
         doc = {
             "name": name,
             "email": email,
-            "mobile": mobile,
+            "mobile": mobile or None,
             "rfid": rfid or None,
             "password_hash": generate_password_hash(password),
             "wallet_balance": float(INITIAL_WALLET),
@@ -1109,12 +1112,15 @@ def settings():
 
         if duplicate:
             flash("That RFID is already linked to another user.", "error")
-        elif not mobile:
-            flash("Mobile number is required.", "error")
         else:
             users.update_one(
                 {"_id": user["_id"]},
-                {"$set": {"mobile": mobile, "rfid": rfid or None}},
+                {
+                    "$set": {
+                        "mobile": mobile or None,
+                        "rfid": rfid or None,
+                    }
+                },
             )
             flash("Profile updated successfully.", "success")
 
