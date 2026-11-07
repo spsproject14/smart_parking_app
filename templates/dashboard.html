@@ -242,7 +242,12 @@
         <small>Availability notification request</small>
 
         <div class="waitlist-badges">
-          {% if w.notified %}
+          {% if w.status == 'EXPIRED' %}
+          <span class="status status-unknown">
+            <i class="fa-solid fa-circle-xmark"></i>
+            Request Expired
+          </span>
+          {% elif w.notified %}
           <span class="status status-available">
             <i class="fa-solid fa-check-circle"></i>
             Notification Sent
@@ -278,7 +283,13 @@
       <div class="full">
         <div class="time-label">Current slot status</div>
 
-        {% if w.live_status == 'Sensor Offline / Unknown' %}
+        {% if w.status == 'EXPIRED' %}
+        <span class="status status-unknown">
+          <i class="fa-solid fa-hourglass-end"></i>
+          Request Expired — slot could not be assigned
+        </span>
+
+        {% elif w.live_status == 'Sensor Offline / Unknown' %}
         <span class="status status-unknown">
           <i class="fa-solid fa-triangle-exclamation"></i>
           Sensor Offline / Unknown
@@ -313,7 +324,13 @@
     <!-- Waitlist action -->
     <div class="booking-actions">
 
-      {% if w.live_status == 'Slot Freed – Available to Check' %}
+      {% if w.status == 'EXPIRED' %}
+      <span class="waitlist-waiting">
+        <i class="fa-solid fa-circle-info"></i>
+        Submit a new request if needed
+      </span>
+
+      {% elif w.live_status == 'Slot Freed – Available to Check' %}
       <a class="btn btn-primary btn-sm"
          href="{{ url_for('book') }}">
         <i class="fa-solid fa-calendar-plus"></i>
@@ -333,15 +350,6 @@
         Waiting for availability
       </span>
       {% endif %}
-
-      <form method="post"
-            action="{{ url_for('opt_out_waitlist', waitlist_id=w._id) }}"
-            onsubmit="return confirm('Are you sure you want to opt out of this availability request?');">
-        <button class="btn btn-danger btn-sm" type="submit">
-          <i class="fa-solid fa-bell-slash"></i>
-          Opt out
-        </button>
-      </form>
 
     </div>
 
