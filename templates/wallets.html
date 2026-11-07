@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block page_content %}
+<div class="welcome">
+  <div>
+    <div class="eyebrow">Payments & transactions</div>
+    <h1 class="page-title">My Wallet</h1>
+    <p class="subtitle">View your available balance, add funds and track wallet activity.</p>
+  </div>
+  <button class="btn btn-primary" onclick="document.getElementById('rechargeModal').classList.add('show')">
+    <i class="fa-solid fa-plus"></i> Add money
+  </button>
+</div>
+
+<div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px">
+  <div class="balance-card">
+    <div class="label">Current wallet balance</div>
+    <div class="amount">₹{{ '%.2f'|format(wallet_balance) }}</div>
+    <button class="btn" onclick="document.getElementById('rechargeModal').classList.add('show')">
+      <i class="fa-solid fa-plus"></i> Add money to wallet
+    </button>
+  </div>
+  <div class="card">
+    <div class="slot-icon" style="margin-bottom: 12px">
+      <i class="fa-solid fa-shield-halved"></i>
+    </div>
+    <h3 style="margin: 0 0 8px">Wallet information</h3>
+    <p class="muted" style="font-size: 12px; line-height: 1.7">
+      Your wallet is used for parking bookings, booking extensions and applicable penalties.
+      All credits and debits are listed below.
+    </p>
+    <div class="notice" style="margin-top: 12px">
+      <i class="fa-solid fa-circle-info"></i>
+      Recharge is currently in demo mode. The selected amount is credited without processing a real payment.
+      Integrate a payment gateway before production use.
+    </div>
+  </div>
+</div>
+
+<div class="section-head">
+  <div>
+    <h3>Wallet transaction history</h3>
+    <p>Recent credits, debits and parking-related charges.</p>
+  </div>
+</div>
+
+<div class="activity-grid">
+  {% for t in transactions %}
+  <div class="activity-card">
+    <div class="activity-top">
+      <div>
+        <span class="pill">{{ t.type|replace('_', ' ') }}</span>
+        <div style="font-weight: 900; margin-top: 9px">{{ t.note or 'Wallet transaction' }}</div>
+      </div>
+      <div class="activity-amount" style="color: {{ '#059669' if t.amount > 0 else '#dc2626' }}">
+        {{ '+' if t.amount > 0 else '' }}₹{{ '%.2f'|format(t.amount) }}
+      </div>
+    </div>
+    <div class="activity-meta">
+      <i class="fa-regular fa-clock"></i>
+      {% if t.created_at %}{{ t.created_at.strftime('%d %b %Y, %I:%M %p') }}{% else %}Date unavailable{% endif %}
+    </div>
+  </div>
+  {% else %}
+  <div class="card empty" style="grid-column: 1/-1">
+    <i class="fa-solid fa-wallet"></i>
+    <strong>No wallet activity yet</strong>
+    <p>Your credits and debits will appear here.</p>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="modal" id="rechargeModal">
+  <div class="modal-card">
+    <button class="modal-close" onclick="document.getElementById('rechargeModal').classList.remove('show')" aria-label="Close">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+    <div class="slot-icon" style="width: 48px; height: 48px; margin-bottom: 15px">
+      <i class="fa-solid fa-wallet"></i>
+    </div>
+    <h3 style="margin: 0">Add money</h3>
+    <p class="muted" style="font-size: 12px">Enter an amount in Indian rupees.</p>
+    <form method="post" action="{{ url_for('wallet_recharge') }}">
+      <div class="field" style="margin: 18px 0">
+        <label>Amount (₹)</label>
+        <input type="number" name="amount" min="1" max="50000" step="1" required placeholder="e.g. 500" />
+      </div>
+      <button class="btn btn-primary" style="width: 100%">
+        Add balance
+      </button>
+      <p class="help" style="margin-top: 10px">Demo only: no real payment is collected.</p>
+    </form>
+  </div>
+</div>
+{% endblock %}
