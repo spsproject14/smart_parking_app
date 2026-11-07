@@ -1000,13 +1000,19 @@ def create_report():
     return redirect(url_for("report_issue"))
 
 
-@app.route("/settings", methods=["GET", "POST"])
+@app.route("/profile", methods=["GET", "POST"])
 @login_required
 @db_required
 def settings():
+    """User profile page. The legacy endpoint name is retained for compatibility."""
     if session.get("role") == "admin":
         return redirect(url_for("admin_dashboard"))
+
     user = current_user()
+    if not user:
+        session.clear()
+        return redirect(url_for("login"))
+
     if request.method == "POST":
         mobile = request.form.get("mobile", "").strip()
         rfid = request.form.get("rfid", "").strip().upper()
@@ -1015,25 +1021,55 @@ def settings():
             if rfid
             else None
         )
+
         if duplicate:
             flash("That RFID is already linked to another user.", "error")
         elif not mobile:
             flash("Mobile number is required.", "error")
         else:
             users.update_one(
-                {"_id": user["_id"]}, {"$set": {"mobile": mobile, "rfid": rfid or None}}
+                {"_id": user["_id"]},
+                {"$set": {"mobile": mobile, "rfid": rfid or None}},
             )
-            flash("Settings updated.", "success")
+            flash("Profile updated successfully.", "success")
+
         return redirect(url_for("settings"))
+
     return render_template(
         "settings.html",
-        page="settings",
+        page="profile",
+        user=user,
+    )
+
+
+@app.route("/settings")
+@login_required
+def legacy_settings_redirect():
+    return redirect(url_for("settings"))
+
+
+@app.route("/wallet")
+@login_required
+@db_required
+def wallet_page():
+    if session.get("role") == "admin":
+        return redirect(url_for("admin_dashboard"))
+
+    reconcile_overstay_charges()
+    user = current_user()
+    if not user:
+        session.clear()
+        return redirect(url_for("login"))
+
+    return render_template(
+        "wallets.html",
+        page="wallet",
         user=user,
         wallet_balance=money(user.get("wallet_balance", 0)),
         transactions=list(
             transactions.find({"user_id": str(user["_id"])})
             .sort("created_at", -1)
-            .limit(30)
+            .limit(100)
         ),
     )
 
@@ -1044,14 +1080,21 @@ def settings():
 def wallet_recharge():
     if session.get("role") == "admin":
         return redirect(url_for("admin_dashboard"))
+
     try:
         amount = Decimal(request.form.get("amount", "0"))
     except Exception:
         amount = Decimal("0")
+
     if amount <= 0 or amount > 50000:
         flash("Enter a recharge amount between ₹1 and ₹50,000.", "error")
-        return redirect(url_for("settings"))
+        return redirect(url_for("wallet_page"))
+
     user = current_user()
+    if not user:
+        session.clear()
+        return redirect(url_for("login"))
+
     # DEMO ONLY: this credits funds without processing an actual payment.
     wallet_credit(
         user["_id"],
@@ -1064,7 +1107,7 @@ def wallet_recharge():
         f"₹{money(amount):.2f} added in DEMO mode. No real payment was processed.",
         "success",
     )
-    return redirect(url_for("settings"))
+    return redirect(url_for("wallet_page"))
 
 
 @app.route("/waitlist", methods=["POST"])
