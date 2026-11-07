@@ -49,7 +49,7 @@ SMTP_APP_PASSWORD = os.getenv("SMTP_APP_PASSWORD", "")
 PARKING_RATE = Decimal(os.getenv("PARKING_RATE_PER_HOUR", "20"))
 OVERSTAY_RATE = Decimal(os.getenv("OVERSTAY_RATE_PER_HOUR", "40"))
 COMPENSATION = Decimal(os.getenv("OCCUPANCY_COMPENSATION", "40"))
-INITIAL_WALLET = Decimal("500")
+INITIAL_WALLET = Decimal("50")
 LOCAL_TZ = timezone(timedelta(hours=5, minutes=30))
 SLOT_IDS = ["P1", "P2", "P3", "P4", "P5"]
 MAX_BOOKING_ADVANCE_DAYS = 30
@@ -476,7 +476,7 @@ def signup():
         session["user_id"] = str(result.inserted_id)
         session["role"] = "user"
         session["email"] = email
-        flash("Account created. ₹500 welcome balance added.", "success")
+        flash("Account created. ₹50 welcome balance added.", "success")
         return redirect(url_for("dashboard"))
     return render_template("signup.html", page="signup", user=None)
 
