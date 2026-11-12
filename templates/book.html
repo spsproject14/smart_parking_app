@@ -165,7 +165,7 @@
         <p>Select start and end time to check availability.</p>
       </div>
     </div>
-    <form method="post" id="bookingForm">
+    <form method="post" id="bookingForm" novalidate>
       <div class="booking-limit-note">
         <i class="fa-solid fa-circle-info"></i
         ><span
@@ -403,24 +403,47 @@
     bookingForm.addEventListener("submit", function (event) {
       const start = startPicker.selectedDates[0];
       const end = endPicker.selectedDates[0];
+      const slotSelect = document.getElementById("slotSelect");
 
+      // Validate explicitly because Flatpickr's visible altInputs are separate
+      // from the original form controls and native validation can target hidden inputs.
       if (!start || !end) {
         event.preventDefault();
-        alert("Please select both the start and end date/time.");
+        alert("Please select both the start and end date/time before booking.");
+        if (!start) startPicker.open();
+        else endPicker.open();
         return;
       }
 
-      if (start < new Date() || start > maxStart) {
+      if (!slotSelect || !slotSelect.value) {
         event.preventDefault();
-        alert("The booking start time must be within the next 30 days.");
+        alert("Please choose an available parking slot.");
+        slotSelect?.focus();
+        return;
+      }
+
+      const now = new Date();
+      if (start <= now || start > maxStart) {
+        event.preventDefault();
+        alert("The booking start time must be in the future and within the next 30 days.");
+        startPicker.open();
         return;
       }
 
       if (end <= start || end.getTime() - start.getTime() > maxDuration) {
         event.preventDefault();
-        alert(
-          "The end time must be after the start time and no more than 48 hours later."
-        );
+        alert("The end time must be after the start time and no more than 48 hours after the start time.");
+        endPicker.open();
+        return;
+      }
+
+      const hours = Math.ceil((end.getTime() - start.getTime()) / 3600000);
+      const amount = hours * 20;
+      if (!confirm(
+        "Confirm booking for " + hours + " hour(s)? Total: ₹" +
+        amount.toFixed(2) + ". This amount will be deducted from your wallet."
+      )) {
+        event.preventDefault();
       }
     });
   })();
