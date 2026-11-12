@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+{% block page_content %}
+
+<div class="welcome">
+  <div>
+    <div class="eyebrow">Availability requests history</div>
+    <h1 class="page-title">All Availability Requests</h1>
+    <p class="subtitle">
+      Showing all past and active notification requests ({{ total_requests }} total).
+    </p>
+  </div>
+  <a class="btn btn-outline" href="{{ url_for('dashboard') }}">
+    <i class="fa-solid fa-arrow-left"></i> Back to dashboard
+  </a>
+</div>
+
+{% if my_waitlist %}
+<div class="booking-list">
+  {% for w in my_waitlist %}
+  <div class="booking-row waitlist-row">
+
+    <div class="booking-slot">
+      <div class="slot-badge">{{ w.slot_id }}</div>
+      <div>
+        <strong>Slot {{ w.slot_id }}</strong>
+        <small>Availability notification request</small>
+        <div class="waitlist-badges">
+          {% if w.status == 'EXPIRED' %}
+          <span class="status status-unknown">
+            <i class="fa-solid fa-circle-xmark"></i> Request Expired
+          </span>
+          {% elif w.notified %}
+          <span class="status status-available">
+            <i class="fa-solid fa-check-circle"></i> Notification Sent
+          </span>
+          {% else %}
+          <span class="status status-booked">
+            <i class="fa-regular fa-clock"></i> Pending Notification
+          </span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="booking-time">
+      <div>
+        <div class="time-label">Requested start</div>
+        <div class="time-value local-time" data-time="{{ w.start_at.isoformat() }}">
+          {{ w.start_at.strftime('%d %b %Y, %I:%M %p') if w.start_at else '—' }}
+        </div>
+      </div>
+      <div>
+        <div class="time-label">Requested end</div>
+        <div class="time-value local-time" data-time="{{ w.end_at.isoformat() }}">
+          {{ w.end_at.strftime('%d %b %Y, %I:%M %p') if w.end_at else '—' }}
+        </div>
+      </div>
+      <div class="full">
+        <div class="time-label">Current slot status</div>
+        {% if w.status == 'EXPIRED' %}
+        <span class="status status-unknown">
+          <i class="fa-solid fa-hourglass-end"></i> Request Expired — slot could not be assigned
+        </span>
+        {% elif w.live_status == 'Sensor Offline / Unknown' %}
+        <span class="status status-unknown">
+          <i class="fa-solid fa-triangle-exclamation"></i> Sensor Offline / Unknown
+        </span>
+        {% elif w.live_status == 'Occupied – Waiting' %}
+        <span class="status status-occupied">
+          <i class="fa-solid fa-car"></i> Occupied – Waiting
+        </span>
+        {% elif w.live_status == 'Vacant Now – Reserved for Selected Time' %}
+        <span class="status status-booked">
+          <i class="fa-solid fa-calendar-check"></i> Vacant Now – Reserved for Selected Time
+        </span>
+        {% elif w.live_status == 'Slot Freed – Available to Check' %}
+        <span class="status status-available">
+          <i class="fa-solid fa-circle-check"></i> Slot Freed – Available to Check
+        </span>
+        {% else %}
+        <span class="status status-unknown">
+          {{ w.live_status or 'Status unavailable' }}
+        </span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="booking-actions">
+      {% if w.status == 'EXPIRED' %}
+      <span class="waitlist-waiting">
+        <i class="fa-solid fa-circle-info"></i> Expired
+      </span>
+      {% elif w.live_status == 'Slot Freed – Available to Check' %}
+      <a class="btn btn-primary btn-sm" href="{{ url_for('book') }}">
+        <i class="fa-solid fa-calendar-plus"></i> Check & Book
+      </a>
+      {% else %}
+      <span class="waitlist-waiting">
+        <i class="fa-solid fa-hourglass-half"></i> Waiting
+      </span>
+      {% endif %}
+    </div>
+
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Pagination Controls -->
+{% if total_pages > 1 %}
+<div class="pagination" style="display: flex; justify-content: center; gap: 10px; margin-top: 30px; align-items: center;">
+  {% if current_page > 1 %}
+  <a class="btn btn-outline btn-sm" href="{{ url_for('all_waitlist_requests', page=current_page-1) }}">
+    <i class="fa-solid fa-chevron-left"></i> Previous
+  </a>
+  {% endif %}
+
+  <span style="color: var(--muted); font-size: 13px; font-weight: 600;">
+    Page {{ current_page }} of {{ total_pages }}
+  </span>
+
+  {% if current_page < total_pages %}
+  <a class="btn btn-outline btn-sm" href="{{ url_for('all_waitlist_requests', page=current_page+1) }}">
+    Next <i class="fa-solid fa-chevron-right"></i>
+  </a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="card empty">
+  <i class="fa-regular fa-bell"></i>
+  <strong>No availability requests found</strong>
+  <p>You haven't submitted any notification requests yet.</p>
+  <a class="btn btn-primary" href="{{ url_for('book') }}">
+    <i class="fa-solid fa-magnifying-glass"></i> Find a parking slot
+  </a>
+</div>
+{% endif %}
+
+<style>
+  .booking-time {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+    gap: 15px;
+    align-items: start;
+    word-break: break-word;
+  }
+  .booking-time .full {
+    grid-column: span 2;
+  }
+  .waitlist-row {
+    align-items: center;
+  }
+  .waitlist-badges {
+    margin-top: 8px;
+  }
+  .waitlist-badges .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .waitlist-waiting {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+  }
+</style>
+
+{% endblock %}
