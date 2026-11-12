@@ -1772,15 +1772,15 @@
           showLoader();
         });
 
-        // Show loader for regular form submissions. Invalid forms do not submit.
-        document.addEventListener(
-          "submit",
-          function (event) {
-            const form = event.target;
-            if (form.matches("form") && form.checkValidity()) showLoader();
-          },
-          true,
-        );
+        // Run after the form's own submit handlers. If a page-level handler
+        // cancels submission (for example, missing booking dates), do not show
+        // the global loader. Native-invalid forms never reach this event.
+        document.addEventListener("submit", function (event) {
+          const form = event.target;
+          if (form instanceof HTMLFormElement && !event.defaultPrevented) {
+            showLoader();
+          }
+        });
 
         // Native browser lazy-loading for images. Keep explicitly eager images eager.
         document
@@ -1923,7 +1923,7 @@
             slotSelect.add(new Option("No slots available for this time", ""));
             if (availabilityHelp)
               availabilityHelp.textContent =
-                "No slot is available for this period. Join the notification queue.";
+                "No slot is available for this period. Join the notification queue on the right.";
           } else {
             slotSelect.add(new Option("Select an available slot", ""));
             available.forEach((x) =>
@@ -1973,33 +1973,8 @@
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
         startInput.min = now.toISOString().slice(0, 16);
       }
-      document
-        .getElementById("bookingForm")
-        ?.addEventListener("submit", (e) => {
-          const s = new Date(startInput.value),
-            en = new Date(endInput.value);
-          if (!(en > s)) {
-            e.preventDefault();
-            alert("End time must be later than start time.");
-            return;
-          }
-          if (en - s > 24 * 3600000) {
-            e.preventDefault();
-            alert("Maximum booking duration is 24 hours.");
-            return;
-          }
-          const hrs = Math.ceil((en - s) / 3600000);
-          if (
-            !confirm(
-              "Confirm booking for " +
-                hrs +
-                " hour(s)? Total: ₹" +
-                (hrs * 20).toFixed(2) +
-                ". This amount will be deducted from your wallet.",
-            )
-          )
-            e.preventDefault();
-        });
+      // Booking-specific validation and payment confirmation live in book.html.
+      // Do not attach a second, conflicting submit handler here.
     </script>
   </body>
 </html>
