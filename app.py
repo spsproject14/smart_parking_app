@@ -2330,6 +2330,85 @@ def cron_maintenance():
         checked_at=iso(now)
     )
 
+@app.route("/waitlist/all")
+@login_required
+@db_required
+def all_waitlist_requests():
+    if session.get("role") == "admin":
+        return redirect(url_for("admin_dashboard"))
+
+    user = current_user()
+    if not user:
+        session.clear()
+        return redirect(url_for("login"))
+
+    cleanup_expired_waitlist()
+    send_expired_waitlist_emails()
+
+    # Pagination setup: 10 per page
+    try:
+        page_num = int(request.args.get("page", 1))
+        if page_num < 1:
+            page_num = 1
+    except ValueError:
+        page_num = 1
+
+    per_page = 10
+    skip = (page_num - 1) * per_page
+
+    total_requests = waitlist.count_documents({"user_id": str(user["_id"])})
+    total_pages = (total_requests + per_page - 1) // per_page
+
+    cursor = (
+        waitlist.find({"user_id": str(user["_id"])})
+        .sort("created_at", -1)
+        .skip(skip)
+        .limit(per_page)
+    )
+
+    my_waitlist = list(cursor)
+
+    # Compute live status for displayed items
+    for item in my_waitlist:
+        if item.get("status") == "EXPIRED" or (
+            item.get("end_at") and item["end_at"] <= now_utc()
+        ):
+            item["status"] = "EXPIRED"
+            item["live_status"] = "Request Expired"
+            item["notification_status"] = "Expired"
+            continue
+
+        slot = slots.find_one({"_id": item["slot_id"]})
+        item["notification_status"] = (
+            "Notification Sent" if item.get("notified") else "Pending"
+        )
+
+        if not slot_sensor_is_fresh(slot):
+            item["live_status"] = "Sensor Offline / Unknown"
+        elif slot.get("occupied", True):
+            item["live_status"] = "Occupied – Waiting"
+        else:
+            conflict = active_booking_for_slot(
+                item["slot_id"], item["start_at"], item["end_at"]
+            )
+            if conflict:
+                item["live_status"] = (
+                    "Vacant Now – Reserved for Selected Time"
+                )
+            else:
+                item["live_status"] = "Slot Freed – Available to Check"
+
+    return render_template(
+        "all_waitlist.html",
+        page="waitlist_all",
+        user=user,
+        my_waitlist=my_waitlist,
+        current_page=page_num,
+        total_pages=total_pages,
+        total_requests=total_requests,
+        wallet_balance=money(user.get("wallet_balance", 0)),
+    )
+
 if __name__ == "__main__":
     if not ADMIN_PASSWORD:
         print("WARNING: Set ADMIN_PASSWORD in .env before using the admin login.")
