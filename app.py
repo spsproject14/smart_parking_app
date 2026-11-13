@@ -732,15 +732,20 @@ def dashboard():
     # Live parking slots
     slot_docs = list(slots.find())
 
-    # Show recent requests, including EXPIRED ones, so users retain their history.
+    # Show recent requests
     my_waitlist = list(
         waitlist.find({
             "user_id": str(user["_id"]),
         }).sort("created_at", -1).limit(50)
     )
 
-    # Calculate live status only for requests that have not expired.
+    # Calculate live status for requests
     for item in my_waitlist:
+        if item.get("status") == "CANCELLED":
+            item["live_status"] = "Request Cancelled"
+            item["notification_status"] = "Cancelled"
+            continue
+
         if item.get("status") == "EXPIRED" or (
             item.get("end_at") and item["end_at"] <= now_utc()
         ):
@@ -791,16 +796,15 @@ def dashboard():
         wallet_balance=money(user.get("wallet_balance", 0))
     )
 
-@app.route("/waitlist/<waitlist_id>/opt-out", methods=["POST"])
+@app.route("/waitlist/<waitlist_id>/cancel", methods=["POST"])
 @login_required
 @db_required
-def opt_out_waitlist(waitlist_id):
-
+def cancel_waitlist(waitlist_id):
+    """Cancel an active or pending availability request."""
     if session.get("role") == "admin":
         return redirect(url_for("admin_dashboard"))
 
     user = current_user()
-
     if not user:
         session.clear()
         return redirect(url_for("login"))
@@ -809,25 +813,38 @@ def opt_out_waitlist(waitlist_id):
         waitlist_object_id = ObjectId(waitlist_id)
     except Exception:
         flash("Invalid availability request.", "error")
-        return redirect(url_for("dashboard"))
+        return redirect(request.referrer or url_for("dashboard"))
 
-    result = waitlist.delete_one({
-        "_id": waitlist_object_id,
-        "user_id": str(user["_id"])
-    })
+    result = waitlist.update_one(
+        {
+            "_id": waitlist_object_id,
+            "user_id": str(user["_id"]),
+            "status": {"$nin": ["EXPIRED", "CANCELLED"]}
+        },
+        {
+            "$set": {
+                "status": "CANCELLED",
+                "cancelled_at": now_utc()
+            }
+        }
+    )
 
-    if result.deleted_count:
-        flash(
-            "You have successfully opted out of this availability request.",
-            "success"
-        )
+    if result.modified_count:
+        flash("Availability request cancelled successfully.", "success")
     else:
-        flash(
-            "Availability request not found or already removed.",
-            "error"
-        )
+        flash("Availability request not found or already inactive.", "error")
 
+    referrer = request.referrer
+    if referrer and ('all_waitlist' in referrer or 'dashboard' in referrer):
+        return redirect(referrer)
     return redirect(url_for("dashboard"))
+
+# Backwards compatibility alias for existing opt-out links/buttons
+@app.route("/waitlist/<waitlist_id>/opt-out", methods=["POST"])
+@login_required
+@db_required
+def opt_out_waitlist(waitlist_id):
+    return cancel_waitlist(waitlist_id)
 
 @app.route("/book", methods=["GET", "POST"])
 @login_required
